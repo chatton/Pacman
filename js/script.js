@@ -62,7 +62,27 @@ function Pacman(x, y, radius, speed){
     this.update = function(){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
-    }
+
+        this.lockToScreen();
+
+    },
+    this.lockToScreen = function(){
+        if(this.x + this.radius >= canvas.width){
+            this.x = canvas.width - this.radius;
+        }
+
+        if(this.x - this.radius <= 0){
+            this.x = this.radius;
+        }
+
+        if(this.y + this.radius >= canvas.height){
+            this.y = canvas.height - this.radius;
+        }
+
+        if(this.y - this.radius <= 0){
+            this.y = this.radius;
+        }
+    },
     this.move = function(keyCode){
         switch(keyCode){
             case 38: // UP
@@ -88,7 +108,7 @@ function Pacman(x, y, radius, speed){
     }
 }
 
-var pacman = new Pacman(100, 100, 50);
+var pacman = new Pacman(100, 100, 25);
 
 function start(){
 
