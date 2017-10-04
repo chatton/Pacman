@@ -6,7 +6,31 @@ document.addEventListener("keydown", function(event){
     pacman.move(event.keyCode);
 }, false); 
 
+
+
 function Pacman(x, y, radius, speed){
+    // mout animation object in charge of providing the "angle"
+    // variable to add/remove to the ctx.arc of drawing pacman
+    // to make the mouth open and close.
+    this.mouthAnimation = {
+        speed : 0.05,
+        gap : 0.3,
+        angle : 0,
+        direction : 1,
+        update : function(){
+            // depending on direction, the mouth will open or close.
+            if(this.direction == 1){
+                this.angle += this.speed; 
+            } else{
+                this.angle -= this.speed;   
+            }
+            
+            // stop it on the way back so it doesn't go back around the full circle.
+            if(this.angle > (1 - this.gap) || this.angle < 0) {
+                this.direction *= -1; // switch direction
+            }
+        } 
+    },
     this.speed = speed || {
         dx : 0,
         dy : 0
@@ -22,19 +46,19 @@ function Pacman(x, y, radius, speed){
         ctx.translate(-this.x, -this.y); // offset based on the initial translation            
         
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, Math.PI / 4, Math.PI * 1.75);
+        ctx.arc(this.x, this.y, this.radius, Math.PI / 4 - this.mouthAnimation.angle, Math.PI * 1.75 + this.mouthAnimation.angle);
         ctx.lineTo(this.x, this.y);
 
         // can calculate the final position using co-ordinate transformation
 
         // requires x offset since the default starting point is the origin point of the canvas
-        var newX = this.radius * Math.cos(Math.PI / 4) + this.x; 
-        var newY = this.radius * Math.sin(Math.PI / 4) + this.y;
+        var newX = this.radius * Math.cos(Math.PI / 4 - this.mouthAnimation.angle) + this.x; 
+        var newY = this.radius * Math.sin(Math.PI / 4 - this.mouthAnimation.angle) + this.y;
         ctx.lineTo(newX, newY);
 
         // can also use built method to return to the starting point of the path
         // (when you use ctx.beginPath()) 
-        // ctx.closePath();
+        //ctx.closePath(); 
 
         ctx.fillStyle = "yellow"
         ctx.fill();
@@ -62,7 +86,7 @@ function Pacman(x, y, radius, speed){
     this.update = function(){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
-
+        this.mouthAnimation.update();
         this.lockToScreen();
 
     },
