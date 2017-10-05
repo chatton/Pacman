@@ -118,33 +118,30 @@ function Pacman(x, y, radius, speed){
             this.y = this.radius;
         }
     },
-    this.move = function(keyCode){
-        switch(keyCode){
-            case 38: // UP
+    this.move = function(signal){
+
+        if(signal == 38 || signal == "UP"){
                 this.direction = {
                     name : "UP",
                     angle : Math.PI * (3/2)
                 };
                 this.speed.dy = -1;
                 this.speed.dx = 0;
-                break;
-            case 37: // LEFT
+        } else if (signal == 37 || signal == "LEFT"){
                 this.direction = {
                     name : "LEFT",
                     angle : Math.PI
                 };
                 this.speed.dx = -1;
                 this.speed.dy = 0;
-                break;
-            case 40: // DOWN
+        } else if (signal == 40 || signal == "DOWN"){
                 this.direction = {
                     name: "DOWN",
                     angle : Math.PI / 2
                 };
                 this.speed.dx = 0;
                 this.speed.dy = 1;
-                break;
-            case 39: // RIGHT
+        } else if (signal == 39 || signal == "RIGHT"){
                 this.direction = {
                     name : "RIGHT",
                     angle : 0
