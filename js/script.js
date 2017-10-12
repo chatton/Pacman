@@ -31,29 +31,29 @@ document.getElementById("fileinput").addEventListener("change", function(event){
 function Level(levelString){
     this.levelString = levelString;
     this.grid = [];
-    this.startPos = {x:0, y:0}
     this.tileSize = 0;
     this.build = function(){
         dots.splice(0, dots.length);
         walls.splice(0, walls.length);
         var rows = this.levelString.split("\n");
         //console.log(rows);
-        this.tileSize = canvas.width / rows.length;
-        console.log(this.tileSize);
+        this.tileSize = canvas.width / rows[0].length;
         for(var row = 0; row < rows.length; row++){
             var list = []
             this.grid.push(list);
-            for(var col = 0; col < 10; col++){
+            for(var col = 0; col < rows[0].length; col++){
                 var char = rows[row][col];
                 
                 if(char == "S"){
                     // this is the starting position for pacman
                     // move him to the starting location.
+                    pacman.resize((this.tileSize / 2) * 0.8); // tilesize/ 2 to fit in one tile
+                    // x 0.8 to make it fill up 80% of the tile instead of the whole space.
                     pacman.stop(); // so velocity from previous level doesn't carry over.
                     pacman.reposition(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2);
                 }
                 if(char == "."){ // put a dot there, but in the middle of the tile not on the edge.
-                    dots.push(new Dot(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2));
+                    dots.push(new Dot(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.15));
                 }
 
                 if(char == "#"){ // it's wall, add a new wall to be rendered each cycle.
@@ -93,10 +93,10 @@ function Ghost(){
 
 
 // the things pacman eats to get points and progress
-function Dot(x, y){
+function Dot(x, y, radius){
     this.x = x;
     this.y = y;
-    this.radius = 5;
+    this.radius = radius;
     this.draw = function(){
         ctx.beginPath();
         ctx.fillStyle = "red";
@@ -149,6 +149,9 @@ function Pacman(x, y, radius, speed){
     this.x = x;
     this.y = y;
     this.radius = radius;
+    this.resize = function(radius){
+        this.radius = radius;
+    },
     this.stop = function(){
         this.speed.dx = 0;
         this.speed.dy = 0;
