@@ -34,7 +34,8 @@ function Level(levelString){
     this.startPos = {x:0, y:0}
     this.tileSize = 0;
     this.build = function(){
-        
+        dots.splice(0, dots.length);
+        walls.splice(0, walls.length);
         var rows = this.levelString.split("\n");
         //console.log(rows);
         this.tileSize = canvas.width / rows.length;
@@ -48,16 +49,15 @@ function Level(levelString){
                 if(char == "S"){
                     // this is the starting position for pacman
                     // move him to the starting location.
-                    this.startPos = {x: col, y : row};
-                    pacman.x = this.startPos.x * 100;
-                    pacman.y = this.startPos.y * 100;
+                    pacman.stop(); // so velocity from previous level doesn't carry over.
+                    pacman.reposition(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2);
                 }
                 if(char == "."){ // put a dot there, but in the middle of the tile not on the edge.
-                    gameObjects.push(new Dot(row * this.tileSize + this.tileSize / 2, col * this.tileSize + this.tileSize / 2));
+                    dots.push(new Dot(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2));
                 }
 
                 if(char == "#"){ // it's wall, add a new wall to be rendered each cycle.
-                    walls.push(new Wall(row * this.tileSize, col * this.tileSize, this.tileSize, this.tileSize));
+                    walls.push(new Wall(col * this.tileSize, row * this.tileSize, this.tileSize, this.tileSize));
                 }  
 
                 list.push(char);
@@ -149,6 +149,14 @@ function Pacman(x, y, radius, speed){
     this.x = x;
     this.y = y;
     this.radius = radius;
+    this.stop = function(){
+        this.speed.dx = 0;
+        this.speed.dy = 0;
+    },
+    this.reposition = function(x, y){
+        this.x = x;
+        this.y = y;
+    }
     this.draw = function(){
         ctx.save();
         ctx.translate(this.x, this.y); // translates the entire co-ordinate system, x, y are our new 0,0
@@ -261,29 +269,30 @@ function Pacman(x, y, radius, speed){
 
 // checks for collisions with JUST pacman into other objects.
 // Ghosts don't collide with the dots, just pacman and the walls.
-function CollisionChecker(pacman, gameObjects){
+function CollisionChecker(pacman, dots, walls){
     this.update = function(){
-        for(var i = 0; i < gameObjects.length; i++){
-            if(cirlcesIntersect(pacman, gameObjects[i])){
-                gameObjects.splice(i, 1); // remove the object from the game
+        for(var i = 0; i < dots.length; i++){
+            if(cirlcesIntersect(pacman, dots[i])){
+                dots.splice(i, 1); // remove the doct from the game
             }
+        }
+        for(var i = 0; i < walls.length; i++){
+            // check wall collisions
         }
     }
 }
 
+var pacman = new Pacman(500, 500, 20);
 
-
-var pacman = new Pacman(500, 500, 25);
-
-var gameObjects = []
+var dots = []
 var walls = []
-var checker = new CollisionChecker(pacman, gameObjects);
+var checker = new CollisionChecker(pacman, dots, walls);
 
 function start(){
     ctx.clearRect(0,0,canvas.height, canvas.width);
     pacman.draw();
     pacman.update();
-    gameObjects.forEach(function(obj){
+    dots.forEach(function(obj){
         obj.draw();
         obj.update();
     });
