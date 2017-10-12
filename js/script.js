@@ -515,17 +515,19 @@ function ghostCollisions(ghost, wall){
     var crossHeight = height * dx;
 
     if(Math.abs(dx) <= width && Math.abs(dy) <= height){ // collision
-        if(crossWidth > crossHeight){ // pacman is below or to the left
-            if(crossWidth > - crossHeight){ // pacman is below
-                //pacman.y = wall.y + wall.height + pacman.radius + 1;
-            } else{ // pacman is to the left
-               // pacman.x = wall.x - pacman.radius - 1;
+        if(crossWidth > crossHeight){ // ghost is below or to the left
+            if(crossWidth > - crossHeight){ // ghost is below
+                ghost.y = wall.y + wall.height + 1;
+            } else{ // ghost is to the left
+               ghost.x = wall.x - ghost.width - 1;
             }
-        }else { // pacman is above or to the right
-            if(crossWidth > -crossHeight){ // pacman is to the right
-                //pacman.x = wall.x + wall.width + pacman.radius + 1;
-            } else{ // pacman is above
-                //pacman.y = wall.y - pacman.radius - 1;
+        }else { // ghost is above or to the right
+            if(crossWidth > -crossHeight){ // ghost is to the right
+
+                ghost.x = wall.x + wall.width + 1;
+            } else{ // ghost is above
+
+                ghost.y = wall.y -ghost.height - 1;
             }
         }
     }
