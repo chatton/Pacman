@@ -453,6 +453,11 @@ function CollisionChecker(pacman, dots, walls, ghosts){
         for(var i = 0; i < walls.length; i++){
             handleWallCollisions(pacman, walls[i]);
         }
+        for(var i = 0; i < walls.length; i++){
+            ghosts.forEach(function(ghost){
+                ghostCollisions(ghost, walls[i]);
+            });
+        }
     }
 }
 
@@ -488,6 +493,39 @@ function handleWallCollisions(pacman, wall){
                 pacman.x = wall.x + wall.width + pacman.radius + 1;
             } else{ // pacman is above
                 pacman.y = wall.y - pacman.radius - 1;
+            }
+        }
+    }
+}
+
+
+function ghostCollisions(ghost, wall){
+    // I found this algorithm on this SO post
+    // https://stackoverflow.com/questions/29861096/detect-which-side-of-a-rectangle-is-colliding-with-another-rectangle
+    
+    // handle collisions between pacman and wall as a rectangle to avoid corner issues.
+    // no need to treat pacman as a circle here.
+
+
+    var dx = (ghost.x  + ghost.width / 2) - (wall.x + wall.width / 2);
+    var dy = (ghost.y + ghost.height / 2) - (wall.y + wall.height /2)
+    var width = (ghost.width + wall.width) / 2;
+    var height = (ghost.height + wall.height) /2;
+    var crossWidth = width * dy;
+    var crossHeight = height * dx;
+
+    if(Math.abs(dx) <= width && Math.abs(dy) <= height){ // collision
+        if(crossWidth > crossHeight){ // pacman is below or to the left
+            if(crossWidth > - crossHeight){ // pacman is below
+                //pacman.y = wall.y + wall.height + pacman.radius + 1;
+            } else{ // pacman is to the left
+               // pacman.x = wall.x - pacman.radius - 1;
+            }
+        }else { // pacman is above or to the right
+            if(crossWidth > -crossHeight){ // pacman is to the right
+                //pacman.x = wall.x + wall.width + pacman.radius + 1;
+            } else{ // pacman is above
+                //pacman.y = wall.y - pacman.radius - 1;
             }
         }
     }
