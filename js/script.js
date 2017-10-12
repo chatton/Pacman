@@ -20,13 +20,134 @@ document.getElementById("fileinput").addEventListener("change", function(event){
         var content = e.target.result;  
         levelString = content;
         level = new Level(levelString);
+        var s = new Graph(levelString);
+        s.build();
         level.build();
         var sound = new Audio("res/sounds/beginning.wav");
-        sound.play();
+        //sound.play();
 
+        /*
+        var from = s.get(2,5);
+        var to = s.get(5,10);
+        console.log(from + " " + to);
+        console.log(s.getPathFromTo(from, to));
+        */
     }
     reader.readAsText(f);
 }, false);
+
+
+
+
+function Node(isPassable, x, y){
+    this.isPassable = isPassable; // if it can be traversed.
+    this.neighbours = []; // the connected nodes.
+    this.x = x;
+    this.y = y;
+}
+
+function Graph(levelAsString){
+    this.levelAsString = levelAsString;
+    this.graph = new Map();
+    this.get = function(x, y){
+        return this.graph.get(String(x) + " " + String(y));
+    }
+    this.build = function(){
+        var rows = this.levelAsString.split("\n");    
+        //this.tileSize = canvas.width / (rows[0].length - 1);
+        for(var i = 0; i < rows.length; i++){
+            for(var j = 0; j < rows[0].length; j++){        
+                var char = rows[i][j];
+                var node;
+
+                // determine if the node is passable.
+                if(char == "S" || char == "." || char == " " || char == "G"){
+                    node = new Node(true, j, i)
+                } else if(char == "#"){
+                    node = new Node(false,j, i);
+                }  
+                // add the node to the graph
+                this.graph.set(String(j) + " " + String(i), node);
+
+            } // inner for
+        } // outer for
+        // second iteration to connect up all the nodes.
+        for(var i = 0; i  < rows.length; i++){
+            for(var j = 0; j < rows[0].length; j++){
+                var node = this.graph.get(String(j) + " " + String(i));
+                var aboveNode = this.graph.get(String(j) + " " + String(i-1));
+                var leftNode = this.graph.get(String(j - 1) + " " + String(i));
+                var rightNode = this.graph.get(String(j + 1) + " " + String(i));
+                var downNode = this.graph.get(String(j) + " " + String(i+1));
+                
+                // add the 4 surrounding nodes if they exist.
+                if(typeof aboveNode !== "undefined" ){
+                    node.neighbours.push(aboveNode);
+                }
+
+                if(typeof leftNode !== "undefined" ){
+                    node.neighbours.push(leftNode);
+                }
+
+                if(typeof rightNode !== "undefined" ){
+                    node.neighbours.push(rightNode);
+                }
+
+                if(typeof downNode !== "undefined" ){
+                    node.neighbours.push(downNode);
+                }
+
+            }
+        }
+    },
+    this.getPathFromTo = function(from, to){
+        var queue = [from]
+        while(queue.length > 0){
+            var element = queue.pop();
+            element.visited = true;
+            //console.log("ELEMENT:");
+            //console.log(element);
+            if(element === to){
+                //console.log("FOUND: ");
+                //console.log(element); 
+                var path = [];
+                var current = element;
+                while(current !== from){
+                    path.push(current);
+                    console.log("PATH");
+                    console.log(path);
+
+                    
+                    current = current.prev;
+                   // if(typeof current === "undefinded" || typeof current.prev == "undefinded"){
+                     //   return path;
+                   // }
+                    //console.log("CURRENT");
+                    //console.log(current);
+                }
+                /*
+                while(current.prev !== from){
+                    //console.log(current);
+                    current = to.prev;
+                    path.push(to);
+                }
+                */
+                path.push(from);
+                return path;
+            }
+            element.neighbours.forEach(function(n){
+                
+                if(n.isPassable && !n.visited){
+                console.log("NEIGHBOUR:");
+                   console.log(n);
+                   n.prev = element;
+                   queue.unshift(n);
+                }
+            });
+        }
+        return []
+    }
+} // Graph
 
 // class that represents a level
 function Level(levelString){
@@ -189,7 +310,7 @@ function Pacman(x, y, radius, speed){
     this.speed = speed || {
         dx : 0,
         dy : 0,
-        magnitude : 1
+        magnitude : 3
     },
     this.x = x;
     this.y = y;
@@ -297,20 +418,19 @@ function Pacman(x, y, radius, speed){
 // checks for collisions with JUST pacman into other objects.
 // Ghosts don't collide with the dots, just pacman and the walls.
 function CollisionChecker(pacman, dots, walls, ghosts){
+    // we don't want to heard multiple instances of the sound each time.
+    // so make it a class variable and re-use so there's no overlap.
+    this.sound = new Audio("res/sounds/chomp.wav");
     this.update = function(){
         for(var i = 0; i < dots.length; i++){
             if(cirlcesIntersect(pacman, dots[i])){
                 dots.splice(i, 1); // remove the dot from the game
-                var sound = new Audio("res/sounds/chomp.wav");
-                sound.play();
-                score += 100;
+                this.sound.play();
+                playerScore += 100;
             }
         }
         for(var i = 0; i < walls.length; i++){
-            // check wall collisions
-            if(handleWallCollisions(pacman, walls[i])){
-                //pacman.stop();
-            }
+            handleWallCollisions(pacman, walls[i]);
         }
     }
 }
@@ -349,9 +469,7 @@ function handleWallCollisions(pacman, wall){
                 pacman.y = wall.y - pacman.radius - 1;
             }
         }
-        return true;
     }
-    return false;
 }
 
 var pacman = new Pacman(500, 500, 20);
@@ -384,6 +502,7 @@ function start(){
     walls.forEach(function(wall){
         wall.draw();
     });
+
     checker.update();
     window.requestAnimationFrame(start);
 }
