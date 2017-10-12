@@ -6,7 +6,37 @@ document.addEventListener("keydown", function(event){
     pacman.move(event.keyCode);
 }, false); 
 
+// keep track of "score", meaningless value to display during and at the end of the game.
+var playerScore = 0; 
 
+function Ghost(){
+
+}
+
+
+// the things pacman eats to get points and progress
+function Dot(x, y){
+    this.x = x;
+    this.y = y;
+    this.radius = 5;
+    this.draw = function(){
+        ctx.beginPath();
+        ctx.fillStyle = "red";
+        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.stroke();
+    },
+    this.update = function(){
+
+    }
+}
+
+
+// the things pacman eats to make the ghosts vulnerable/scared of pacman
+function PowerPellet(){
+
+}
 
 function Pacman(x, y, radius, speed){
     // mout animation object in charge of providing the "angle"
@@ -152,12 +182,21 @@ function Pacman(x, y, radius, speed){
     }
 }
 
+var gameObjects = []
+
 var pacman = new Pacman(100, 100, 25);
+gameObjects.push(pacman);
+gameObjects.push(new Dot(200,40));
+gameObjects.push(new Dot(200,70));
+gameObjects.push(new Dot(200,100));
+gameObjects.push(new Dot(200,130));
 
 function start(){
     ctx.clearRect(0,0,canvas.height, canvas.width);
-    pacman.draw();
-    pacman.update();
+    gameObjects.forEach(function(obj){
+        obj.draw();
+        obj.update();
+    });
     window.requestAnimationFrame(start);
 }
 start();
