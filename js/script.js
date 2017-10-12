@@ -19,9 +19,10 @@ document.getElementById("fileinput").addEventListener("change", function(event){
         // content is a string containing the contents of the file.
         var content = e.target.result;  
         levelString = content;
-        //console.log(levelString);
         level = new Level(levelString);
         level.build();
+        var sound = new Audio("res/sounds/beginning.wav");
+        sound.play();
 
     }
     reader.readAsText(f);
@@ -148,8 +149,6 @@ function Dot(x, y, radius){
         ctx.fillStyle = "yellow";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
-        //ctx.strokeStyle = "yellow";
-        //ctx.stroke();
     },
     this.update = function(){}
 }
@@ -301,7 +300,10 @@ function CollisionChecker(pacman, dots, walls, ghosts){
     this.update = function(){
         for(var i = 0; i < dots.length; i++){
             if(cirlcesIntersect(pacman, dots[i])){
-                dots.splice(i, 1); // remove the doct from the game
+                dots.splice(i, 1); // remove the dot from the game
+                var sound = new Audio("res/sounds/chomp.wav");
+                sound.play();
+                score += 100;
             }
         }
         for(var i = 0; i < walls.length; i++){
@@ -363,7 +365,11 @@ function clear(){
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.height, canvas.width);
 }
+
+//var snd = new Audio("file.wav"); // buffers automatically when created
+
 function start(){
+    //snd.play();
     clear();
     pacman.draw();
     pacman.update();
