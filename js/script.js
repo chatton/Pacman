@@ -9,6 +9,20 @@ document.addEventListener("keydown", function(event){
 // keep track of "score", meaningless value to display during and at the end of the game.
 var playerScore = 0; 
 
+// read in a file based on what the user provides.
+document.getElementById("fileinput").addEventListener("change", function(event){
+    var f = event.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e){
+        // content is a string containing the contents of the file.
+        var content = e.target.result;  
+        console.log(content);
+    }
+    reader.readAsText(f);
+}, false);
+
+
+
 
 function cirlcesIntersect(obj1, obj2){
     var dx = obj1.x - obj2.x; // distance in x co-ord
@@ -73,7 +87,8 @@ function Pacman(x, y, radius, speed){
     },
     this.speed = speed || {
         dx : 0,
-        dy : 0
+        dy : 0,
+        magnitude : 1
     },
     this.x = x;
     this.y = y;
@@ -161,14 +176,14 @@ function Pacman(x, y, radius, speed){
                     name : "UP",
                     angle : Math.PI * (3/2)
                 };
-                this.speed.dy = -1;
+                this.speed.dy = -this.speed.magnitude;
                 this.speed.dx = 0;
         } else if (signal == 37 || signal == "LEFT"){
                 this.direction = {
                     name : "LEFT",
                     angle : Math.PI
                 };
-                this.speed.dx = -1;
+                this.speed.dx = -this.speed.magnitude;
                 this.speed.dy = 0;
         } else if (signal == 40 || signal == "DOWN"){
                 this.direction = {
@@ -176,19 +191,20 @@ function Pacman(x, y, radius, speed){
                     angle : Math.PI / 2
                 };
                 this.speed.dx = 0;
-                this.speed.dy = 1;
+                this.speed.dy = this.speed.magnitude;
         } else if (signal == 39 || signal == "RIGHT"){
                 this.direction = {
                     name : "RIGHT",
                     angle : 0
                 };
-                this.speed.dx = 1;
+                this.speed.dx = this.speed.magnitude;
                 this.speed.dy = 0;
         }
     }
 }
 
-// checks for collisions with JUST pacman and other objects.
+// checks for collisions with JUST pacman into other objects.
+// Ghosts don't collide with the dots, just pacman and the walls.
 function CollisionChecker(pacman, gameObjects){
     this.update = function(){
         for(var i = 0; i < gameObjects.length; i++){
