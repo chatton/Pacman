@@ -127,15 +127,16 @@ function Graph(levelAsString){
         while(queue.length > 0){
             var element = queue.pop();
             element.visited = true;
+
             if(element === to){
                 var path = [];
                 var current = element;
                 while(current !== from){
                     path.push(current);
-                    console.log(current);
                     current = current.prev;
                 }
                 path.push(from);
+                path.reverse();
                 return path;
             }
             element.neighbours.forEach(function(n){
@@ -245,25 +246,22 @@ function Ghost(x, y, width, height){
         this.destination = graph.get(Math.floor(pacman.x / tileSize), Math.floor(pacman.y / tileSize));
         
         if(time % 100 == 0){
-            console.log(this.currentPoint);
-            console.log(this.destination);
             this.path = graph.getPathFromTo(this.currentPoint, this.destination);
+            this.dest = this.path.pop(0); // position 0 is where the ghost is right now.
         }
         
-        
-        /*
-        var node = this.path[0];
-        var next = this.path[1];
-        if(node === undefined || next === undefined){
-            return;
+        if(this.path.length > 1){
+            if(this.dest.x > this.currentPoint.x){
+                //console.log("RIGHT");
+                this.move("RIGHT");
+            } else if(this.dest.x < this.currentPoint.x){
+                this.move("LEFT");
+            } else if(this.dest.y < this.currentPoint.y){
+                this.move("UP");
+            } else if(this.dest.y > this.currentPoint.y){
+                this.move("DOWN")
+            }
         }
-
-        if(next.x > node.x){
-            this.move("LEFT");
-        } else if (next.x < node.x){
-            this.move("RIGHT");
-        }
-        */
     },
      this.move = function(signal){
         if(signal == "UP"){
