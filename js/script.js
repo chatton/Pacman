@@ -10,6 +10,9 @@ document.addEventListener("keydown", function(event){
 var playerScore = 0;
 var levelString = "";
 var level;
+var graph;
+var tileSize;
+var time = 0;
 
 // read in a file based on what the user provides.
 document.getElementById("fileinput").addEventListener("change", function(event){
@@ -20,17 +23,30 @@ document.getElementById("fileinput").addEventListener("change", function(event){
         var content = e.target.result;  
         levelString = content;
         level = new Level(levelString);
-        var s = new Graph(levelString);
-        s.build();
+        graph = new Graph(levelString);
+        graph.build();
         level.build();
+        tileSize = level.tileSize;
         var sound = new Audio("res/sounds/beginning.wav");
         //sound.play();
 
         /*
-        var from = s.get(2,5);
-        var to = s.get(5,10);
-        console.log(from + " " + to);
-        console.log(s.getPathFromTo(from, to));
+        var from = graph.get(1,1);
+        var to = graph.get(1,20);
+        console.log(graph.getPathFromTo(from, to));
+
+
+        var from = graph.get(3,5);
+        var to = graph.get(5,10);
+        console.log(graph.getPathFromTo(from, to));
+
+        var from = graph.get(2,2);
+        var to = graph.get(5,6);
+        console.log(graph.getPathFromTo(from, to));
+
+        var from = graph.get(2,6);
+        var to = graph.get(2,10);
+        console.log(graph.getPathFromTo(from, to));
         */
     }
     reader.readAsText(f);
@@ -101,51 +117,35 @@ function Graph(levelAsString){
         }
     },
     this.getPathFromTo = function(from, to){
+        
+        graph.graph.forEach(function(item, key, mapObj){
+            item.prev = undefined;
+            item.visited = false;
+        });
+
         var queue = [from]
         while(queue.length > 0){
             var element = queue.pop();
             element.visited = true;
-            //console.log("ELEMENT:");
-            //console.log(element);
             if(element === to){
-                //console.log("FOUND: ");
-                //console.log(element); 
                 var path = [];
                 var current = element;
                 while(current !== from){
                     path.push(current);
-                    console.log("PATH");
-                    console.log(path);
-
-                    
+                    console.log(current);
                     current = current.prev;
-                   // if(typeof current === "undefinded" || typeof current.prev == "undefinded"){
-                     //   return path;
-                   // }
-                    //console.log("CURRENT");
-                    //console.log(current);
                 }
-                /*
-                while(current.prev !== from){
-                    //console.log(current);
-                    current = to.prev;
-                    path.push(to);
-                }
-                */
                 path.push(from);
                 return path;
             }
             element.neighbours.forEach(function(n){
-                
                 if(n.isPassable && !n.visited){
-                console.log("NEIGHBOUR:");
-                   console.log(n);
                    n.prev = element;
                    queue.unshift(n);
                 }
             });
         }
-        return []
+        return [] // no path found
     }
 } // Graph
 
@@ -226,6 +226,7 @@ function Ghost(x, y, width, height){
     this.y = y;
     this.width = width;
     this.height = height;
+    this.path = [];
     this.draw = function(){
         ctx.beginPath();
         ctx.fillStyle = "red";
@@ -240,7 +241,29 @@ function Ghost(x, y, width, height){
     this.update = function(){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
-        //this.followPlayer();
+        this.currentPoint = graph.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
+        this.destination = graph.get(Math.floor(pacman.x / tileSize), Math.floor(pacman.y / tileSize));
+        
+        if(time % 100 == 0){
+            console.log(this.currentPoint);
+            console.log(this.destination);
+            this.path = graph.getPathFromTo(this.currentPoint, this.destination);
+        }
+        
+        
+        /*
+        var node = this.path[0];
+        var next = this.path[1];
+        if(node === undefined || next === undefined){
+            return;
+        }
+
+        if(next.x > node.x){
+            this.move("LEFT");
+        } else if (next.x < node.x){
+            this.move("RIGHT");
+        }
+        */
     },
      this.move = function(signal){
         if(signal == "UP"){
@@ -425,7 +448,7 @@ function CollisionChecker(pacman, dots, walls, ghosts){
         for(var i = 0; i < dots.length; i++){
             if(cirlcesIntersect(pacman, dots[i])){
                 dots.splice(i, 1); // remove the dot from the game
-                this.sound.play();
+                //this.sound.play();
                 playerScore += 100;
             }
         }
@@ -489,6 +512,10 @@ function clear(){
 function start(){
     //snd.play();
     clear();
+    time++;
+    if(time > 100000){
+        time = 0;
+    }
     pacman.draw();
     pacman.update();
     ghosts.forEach(function(ghost){
