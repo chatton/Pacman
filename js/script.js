@@ -298,24 +298,25 @@ function handleWallCollisions(pacman, wall){
         y: pacman.y - pacman.radius,
         size : 2 * pacman.radius
     }
-    
+
     var dx = (pacmanRect.x  + pacmanRect.size / 2) - (wall.x + wall.width / 2);
     var dy = (pacmanRect.y + pacmanRect.size / 2) - (wall.y + wall.height /2)
     var width = (pacmanRect.size + wall.width) / 2;
     var height = (pacmanRect.size + wall.height) /2;
     var crossWidth = width * dy;
     var crossHeight = height * dx;
+    
     if(Math.abs(dx) <= width && Math.abs(dy) <= height){ // collision
         if(crossWidth > crossHeight){ // pacman is below or to the left
-            if(pacmanRect.x < wall.x){ // pacman to the left
-                pacman.x = wall.x - pacman.radius - 1;
-            } else { // below
+            if(crossWidth > - crossHeight){ // pacman is below
                 pacman.y = wall.y + wall.height + pacman.radius + 1;
+            } else{ // pacman is to the left
+                pacman.x = wall.x - pacman.radius - 1;
             }
         }else { // pacman is above or to the right
-            if(pacmanRect.x >= wall.x + wall.width){ // pacman to the right
+            if(crossWidth > -crossHeight){ // pacman is to the right
                 pacman.x = wall.x + wall.width + pacman.radius + 1;
-            } else if(pacmanRect.y < wall.y){ // pacman is above
+            } else{ // pacman is above
                 pacman.y = wall.y - pacman.radius - 1;
             }
         }
