@@ -214,27 +214,7 @@ function Pacman(x, y, radius, speed){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
         this.mouthAnimation.update();
-        this.lockToScreen();
-
-    },
-    this.lockToScreen = function(){
-        // if pacman every goes offscreen, he'll be locked back into the canvas.
-        if(this.x + this.radius >= canvas.width){
-            this.x = canvas.width - this.radius;
-        }
-
-        if(this.x - this.radius <= 0){
-            this.x = this.radius;
-        }
-
-        if(this.y + this.radius >= canvas.height){
-            this.y = canvas.height - this.radius;
-        }
-
-        if(this.y - this.radius <= 0){
-            this.y = this.radius;
-        }
-    },
+    }
     this.move = function(signal){
 
         if(signal == 38 || signal == "UP"){
@@ -305,7 +285,7 @@ function handleWallCollisions(pacman, wall){
     var height = (pacmanRect.size + wall.height) /2;
     var crossWidth = width * dy;
     var crossHeight = height * dx;
-    
+
     if(Math.abs(dx) <= width && Math.abs(dy) <= height){ // collision
         if(crossWidth > crossHeight){ // pacman is below or to the left
             if(crossWidth > - crossHeight){ // pacman is below
