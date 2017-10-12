@@ -92,6 +92,11 @@ function cirlcesIntersect(obj1, obj2){
 }
 
 function Ghost(x, y, width, height){
+    this.speed =  {
+        dx : 0,
+        dy : 0,
+        magnitude : 0.8
+    },
     this.x = x;
     this.y = y;
     this.width = width;
@@ -107,8 +112,39 @@ function Ghost(x, y, width, height){
         ctx.fill();
         ctx.stroke();
     },
-    this.update = function(){}
-
+    this.update = function(){
+        this.x += this.speed.dx;
+        this.y += this.speed.dy;
+        //this.followPlayer();
+    },
+     this.move = function(signal){
+        if(signal == "UP"){
+                this.speed.dy = -this.speed.magnitude;
+                this.speed.dx = 0;
+        } else if (signal == "LEFT"){
+                this.speed.dx = -this.speed.magnitude;
+                this.speed.dy = 0;
+        } else if (signal == "DOWN"){
+                this.speed.dx = 0;
+                this.speed.dy = this.speed.magnitude;
+        } else if (signal == "RIGHT"){
+                this.speed.dx = this.speed.magnitude;
+                this.speed.dy = 0;
+        }
+    }
+    /*
+    this.followPlayer = function(){
+        if(pacman.x < this.x){ // want to go left to find pacman
+            this.move("LEFT");
+        }  if (pacman.y < this.y){ // want to go up to find pacman
+            this.move("UP");
+        }  if(pacman.y > this.y){ // want to go down to find pacman
+            this.move("DOWN");
+        }  if(pacman.x > this.x){ // want to go right to find pacman
+            this.move("RIGHT");
+        }
+    }
+    */
 }
 
 
@@ -237,7 +273,6 @@ function Pacman(x, y, radius, speed){
         this.mouthAnimation.update();
     }
     this.move = function(signal){
-
         if(signal == 38 || signal == "UP"){
                 this.direction = {
                     name : "UP",
@@ -272,7 +307,7 @@ function Pacman(x, y, radius, speed){
 
 // checks for collisions with JUST pacman into other objects.
 // Ghosts don't collide with the dots, just pacman and the walls.
-function CollisionChecker(pacman, dots, walls){
+function CollisionChecker(pacman, dots, walls, ghosts){
     this.update = function(){
         for(var i = 0; i < dots.length; i++){
             if(cirlcesIntersect(pacman, dots[i])){
@@ -282,11 +317,12 @@ function CollisionChecker(pacman, dots, walls){
         for(var i = 0; i < walls.length; i++){
             // check wall collisions
             if(handleWallCollisions(pacman, walls[i])){
-                pacman.stop();
+                //pacman.stop();
             }
         }
     }
 }
+
 
 function handleWallCollisions(pacman, wall){
     // I found this algorithm on this SO post
@@ -331,7 +367,7 @@ var pacman = new Pacman(500, 500, 20);
 var dots = []
 var walls = []
 var ghosts = []
-var checker = new CollisionChecker(pacman, dots, walls);
+var checker = new CollisionChecker(pacman, dots, walls, ghosts);
 
 
 function start(){
