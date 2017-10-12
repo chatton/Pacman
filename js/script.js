@@ -33,11 +33,12 @@ function Level(levelString){
     this.grid = [];
     this.tileSize = 0;
     this.build = function(){
+        // wipe the existing objects so the don't carry over.
         dots.splice(0, dots.length);
         walls.splice(0, walls.length);
         var rows = this.levelString.split("\n");
-        //console.log(rows);
-        this.tileSize = canvas.width / rows[0].length;
+        // -1 for the newline character, this way we get the correct number.
+        this.tileSize = canvas.width / (rows[0].length - 1);
         for(var row = 0; row < rows.length; row++){
             var list = []
             this.grid.push(list);
@@ -62,9 +63,7 @@ function Level(levelString){
 
                 list.push(char);
             }
-
         }
-
     }
 }
 
