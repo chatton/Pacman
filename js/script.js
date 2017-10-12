@@ -7,7 +7,9 @@ document.addEventListener("keydown", function(event){
 }, false); 
 
 // keep track of "score", meaningless value to display during and at the end of the game.
-var playerScore = 0; 
+var playerScore = 0;
+var levelString = "";
+var level;
 
 // read in a file based on what the user provides.
 document.getElementById("fileinput").addEventListener("change", function(event){
@@ -16,12 +18,66 @@ document.getElementById("fileinput").addEventListener("change", function(event){
     reader.onload = function(e){
         // content is a string containing the contents of the file.
         var content = e.target.result;  
-        console.log(content);
+        levelString = content;
+        //console.log(levelString);
+        level = new Level(levelString);
+        level.build();
+
     }
     reader.readAsText(f);
 }, false);
 
+// class that represents a level
+function Level(levelString){
+    this.levelString = levelString;
+    this.grid = [];
+    this.startPos = {x:0, y:0}
+    this.tileSize = 0;
+    this.build = function(){
+        
+        var rows = this.levelString.split("\n");
+        //console.log(rows);
+        this.tileSize = canvas.width / rows.length;
+        console.log(this.tileSize);
+        for(var row = 0; row < rows.length; row++){
+            var list = []
+            this.grid.push(list);
+            for(var col = 0; col < 10; col++){
+                var char = rows[row][col];
+                
+                if(char == "S"){
+                    // this is the starting position for pacman
+                    // move him to the starting location.
+                    this.startPos = {x: col, y : row};
+                    pacman.x = this.startPos.x * 100;
+                    pacman.y = this.startPos.y * 100;
+                }
+                if(char == "."){ // put a dot there, but in the middle of the tile not on the edge.
+                    gameObjects.push(new Dot(row * this.tileSize + this.tileSize / 2, col * this.tileSize + this.tileSize / 2));
+                }
 
+                if(char == "#"){ // it's wall, add a new wall to be rendered each cycle.
+                    walls.push(new Wall(row * this.tileSize, col * this.tileSize, this.tileSize, this.tileSize));
+                }  
+
+                list.push(char);
+            }
+
+        }
+
+    }
+}
+
+function Wall(x, y, width, height){
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.draw = function(){
+        ctx.fillStyle = "black";
+        ctx.fillRect(this.x, this.y , this.width, this.height);
+    }
+}
 
 
 function cirlcesIntersect(obj1, obj2){
@@ -209,7 +265,7 @@ function CollisionChecker(pacman, gameObjects){
     this.update = function(){
         for(var i = 0; i < gameObjects.length; i++){
             if(cirlcesIntersect(pacman, gameObjects[i])){
-                gameObjects.pop(i); // remove the object from the game
+                gameObjects.splice(i, 1); // remove the object from the game
             }
         }
     }
@@ -217,13 +273,10 @@ function CollisionChecker(pacman, gameObjects){
 
 
 
-var pacman = new Pacman(100, 100, 25);
+var pacman = new Pacman(500, 500, 25);
 
 var gameObjects = []
-gameObjects.push(new Dot(200,40));
-gameObjects.push(new Dot(200,70));
-gameObjects.push(new Dot(200,100));
-gameObjects.push(new Dot(200,130));
+var walls = []
 var checker = new CollisionChecker(pacman, gameObjects);
 
 function start(){
@@ -233,6 +286,9 @@ function start(){
     gameObjects.forEach(function(obj){
         obj.draw();
         obj.update();
+    });
+    walls.forEach(function(wall){
+        wall.draw();
     });
     checker.update();
     window.requestAnimationFrame(start);
