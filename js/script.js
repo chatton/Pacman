@@ -34,6 +34,7 @@ function Level(levelString){
     this.tileSize = 0;
     this.build = function(){
         // wipe the existing objects so the don't carry over.
+        ghosts.splice(0, ghosts.length);
         dots.splice(0, dots.length);
         walls.splice(0, walls.length);
         var rows = this.levelString.split("\n");
@@ -61,6 +62,10 @@ function Level(levelString){
                     walls.push(new Wall(col * this.tileSize, row * this.tileSize, this.tileSize, this.tileSize));
                 }  
 
+                if(char == "G"){
+                    ghosts.push(new Ghost(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2, (this.tileSize/2) * 0.5, (this.tileSize/2) * 0.5));
+                }
+
                 list.push(char);
             }
         }
@@ -86,7 +91,23 @@ function cirlcesIntersect(obj1, obj2){
     return distance < (obj1.radius + obj2.radius);
 }
 
-function Ghost(){
+function Ghost(x, y, width, height){
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.draw = function(){
+        ctx.beginPath();
+        ctx.fillStyle = "blue";
+        ctx.arc(this.x , this.y, this.width, Math.PI, 2* Math.PI);
+        ctx.lineTo(this.x + this.width, this.y + this.height);
+        ctx.arc(this.x + this.width /2 , this.y + this.height, this.width * 0.5, 0, Math.PI);
+        ctx.arc(this.x + this.width /2 - this.width , this.y + this.height, this.width * 0.5, 0, Math.PI);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    },
+    this.update = function(){}
 
 }
 
@@ -309,12 +330,18 @@ var pacman = new Pacman(500, 500, 20);
 
 var dots = []
 var walls = []
+var ghosts = []
 var checker = new CollisionChecker(pacman, dots, walls);
+
 
 function start(){
     ctx.clearRect(0,0,canvas.height, canvas.width);
     pacman.draw();
     pacman.update();
+    ghosts.forEach(function(ghost){
+        ghost.draw();
+        ghost.update();
+    });
     dots.forEach(function(obj){
         obj.draw();
         obj.update();
