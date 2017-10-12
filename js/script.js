@@ -9,6 +9,14 @@ document.addEventListener("keydown", function(event){
 // keep track of "score", meaningless value to display during and at the end of the game.
 var playerScore = 0; 
 
+
+function cirlcesIntersect(obj1, obj2){
+    var dx = obj1.x - obj2.x; // distance in x co-ord
+    var dy = obj1.y - obj2.y; // distance in y co-ord
+    var distance = Math.sqrt((dx * dx) + (dy * dy)); // pythagoras' theorem
+    return distance < (obj1.radius + obj2.radius);
+}
+
 function Ghost(){
 
 }
@@ -27,9 +35,7 @@ function Dot(x, y){
         ctx.strokeStyle = "black";
         ctx.stroke();
     },
-    this.update = function(){
-
-    }
+    this.update = function(){}
 }
 
 
@@ -182,21 +188,38 @@ function Pacman(x, y, radius, speed){
     }
 }
 
-var gameObjects = []
+// checks for collisions with JUST pacman and other objects.
+function CollisionChecker(pacman, gameObjects){
+    this.update = function(){
+        for(var i = 0; i < gameObjects.length; i++){
+            if(cirlcesIntersect(pacman, gameObjects[i])){
+                gameObjects.pop(i); // remove the object from the game
+            }
+        }
+    }
+}
+
+
 
 var pacman = new Pacman(100, 100, 25);
-gameObjects.push(pacman);
+
+var gameObjects = []
 gameObjects.push(new Dot(200,40));
 gameObjects.push(new Dot(200,70));
 gameObjects.push(new Dot(200,100));
 gameObjects.push(new Dot(200,130));
+var checker = new CollisionChecker(pacman, gameObjects);
 
 function start(){
     ctx.clearRect(0,0,canvas.height, canvas.width);
+    pacman.draw();
+    pacman.update();
     gameObjects.forEach(function(obj){
         obj.draw();
         obj.update();
     });
+    checker.update();
     window.requestAnimationFrame(start);
 }
+
 start();
