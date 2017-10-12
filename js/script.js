@@ -80,6 +80,9 @@ function Wall(x, y, width, height){
     this.draw = function(){
         ctx.fillStyle = "black";
         ctx.fillRect(this.x, this.y , this.width, this.height);
+        ctx.strokeStyle = "blue";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.x, this.y , this.width, this.height);
     }
 }
 
@@ -103,7 +106,7 @@ function Ghost(x, y, width, height){
     this.height = height;
     this.draw = function(){
         ctx.beginPath();
-        ctx.fillStyle = "blue";
+        ctx.fillStyle = "red";
         ctx.arc(this.x , this.y, this.width, Math.PI, 2* Math.PI);
         ctx.lineTo(this.x + this.width, this.y + this.height);
         ctx.arc(this.x + this.width /2 , this.y + this.height, this.width * 0.5, 0, Math.PI);
@@ -132,19 +135,6 @@ function Ghost(x, y, width, height){
                 this.speed.dy = 0;
         }
     }
-    /*
-    this.followPlayer = function(){
-        if(pacman.x < this.x){ // want to go left to find pacman
-            this.move("LEFT");
-        }  if (pacman.y < this.y){ // want to go up to find pacman
-            this.move("UP");
-        }  if(pacman.y > this.y){ // want to go down to find pacman
-            this.move("DOWN");
-        }  if(pacman.x > this.x){ // want to go right to find pacman
-            this.move("RIGHT");
-        }
-    }
-    */
 }
 
 
@@ -155,11 +145,11 @@ function Dot(x, y, radius){
     this.radius = radius;
     this.draw = function(){
         ctx.beginPath();
-        ctx.fillStyle = "red";
+        ctx.fillStyle = "yellow";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
-        ctx.strokeStyle = "black";
-        ctx.stroke();
+        //ctx.strokeStyle = "yellow";
+        //ctx.stroke();
     },
     this.update = function(){}
 }
@@ -369,9 +359,12 @@ var walls = []
 var ghosts = []
 var checker = new CollisionChecker(pacman, dots, walls, ghosts);
 
-
+function clear(){
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.height, canvas.width);
+}
 function start(){
-    ctx.clearRect(0,0,canvas.height, canvas.width);
+    clear();
     pacman.draw();
     pacman.update();
     ghosts.forEach(function(ghost){
