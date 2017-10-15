@@ -52,9 +52,6 @@ document.getElementById("fileinput").addEventListener("change", function(event){
     reader.readAsText(f);
 }, false);
 
-
-
-
 function Node(isPassable, x, y){
     this.isPassable = isPassable; // if it can be traversed.
     this.neighbours = []; // the connected nodes.
@@ -117,16 +114,11 @@ function Graph(levelAsString){
         }
     },
     this.getPathFromTo = function(from, to){
-        
-        graph.graph.forEach(function(item, key, mapObj){
-            item.prev = undefined;
-            item.visited = false;
-        });
-
-        var queue = [from]
+        var visited = new Set();
+        var queue = [from];
         while(queue.length > 0){
             var element = queue.pop();
-            element.visited = true;
+            visited.add(element);
 
             if(element === to){
                 var path = [];
@@ -140,7 +132,7 @@ function Graph(levelAsString){
                 return path;
             }
             element.neighbours.forEach(function(n){
-                if(n.isPassable && !n.visited){
+                if(n.isPassable && !visited.has(n)){
                    n.prev = element;
                    queue.unshift(n);
                 }
