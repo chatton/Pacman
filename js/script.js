@@ -30,24 +30,6 @@ document.getElementById("fileinput").addEventListener("change", function(event){
         var sound = new Audio("res/sounds/beginning.wav");
         //sound.play();
 
-        /*
-        var from = graph.get(1,1);
-        var to = graph.get(1,20);
-        console.log(graph.getPathFromTo(from, to));
-
-
-        var from = graph.get(3,5);
-        var to = graph.get(5,10);
-        console.log(graph.getPathFromTo(from, to));
-
-        var from = graph.get(2,2);
-        var to = graph.get(5,6);
-        console.log(graph.getPathFromTo(from, to));
-
-        var from = graph.get(2,6);
-        var to = graph.get(2,10);
-        console.log(graph.getPathFromTo(from, to));
-        */
     }
     reader.readAsText(f);
 }, false);
@@ -231,27 +213,41 @@ function Ghost(x, y, width, height){
         ctx.fill();
         ctx.stroke();
     },
+    /*
+    providing an x/y co-ordinate to the setDestination method
+    will make that ghost navigate towards that point on the board.
+    */
+    this.setDestination = function(x, y){ 
+        this.destination = graph.get(Math.floor(x / tileSize), Math.floor(y / tileSize));
+    },
     this.update = function(){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
+        // gets the corresponding Node from the graph
         this.currentPoint = graph.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
-        this.destination = graph.get(Math.floor(pacman.x / tileSize), Math.floor(pacman.y / tileSize));
-        
-        if(time % 100 == 0){
-            this.path = graph.getPathFromTo(this.currentPoint, this.destination);
-            this.dest = this.path.pop(0); // position 0 is where the ghost is right now.
-        }
-        
-        if(this.path.length > 1){
-            if(this.dest.x > this.currentPoint.x){
-                //console.log("RIGHT");
-                this.move("RIGHT");
-            } else if(this.dest.x < this.currentPoint.x){
-                this.move("LEFT");
-            } else if(this.dest.y < this.currentPoint.y){
-                this.move("UP");
-            } else if(this.dest.y > this.currentPoint.y){
-                this.move("DOWN")
+        //this.destination = graph.get(Math.floor(pacman.x / tileSize), Math.floor(pacman.y / tileSize));
+        this.setDestination(pacman.x, pacman.y);
+
+        if(time % 20 == 0){ // don't need to calculate path for every ghost on every tick
+            // generate a path using BFS algorithm
+            var path = graph.getPathFromTo(this.currentPoint, this.destination);
+            if(path.length >= 2){ // there's more path to go, so go to the next node
+                this.currentTarget = path[1];
+            } else { // already at the target, so just stay there until new target assigned.
+                this.currentTarget = path[0]
+            }
+
+          if(this.currentTarget !== this.currentPoint){                
+                if(this.currentTarget.x > this.currentPoint.x){
+                    this.move("RIGHT");
+                } else if(this.currentTarget.x < this.currentPoint.x){
+                    this.move("LEFT");
+                } else if(this.currentTarget.y < this.currentPoint.y){
+                    this.move("UP");
+                } else if(this.currentTarget.y > this.currentPoint.y){
+                    this.move("DOWN")
+                }
+                
             }
         }
     },
@@ -447,7 +443,7 @@ function CollisionChecker(pacman, dots, walls, ghosts){
         }
         for(var i = 0; i < walls.length; i++){
             ghosts.forEach(function(ghost){
-                ghostCollisions(ghost, walls[i]);
+                //ghostCollisions(ghost, walls[i]);
             });
         }
     }
