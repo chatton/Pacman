@@ -23,8 +23,8 @@ document.getElementById("fileinput").addEventListener("change", function(event){
         var content = e.target.result;  
         levelString = content;
         level = new Level(levelString);
-        graph = new Graph(levelString);
-        graph.build();
+        //graph = new Graph(levelString);
+        //graph.build();
         level.build();
         tileSize = level.tileSize;
         var sound = new Audio("res/sounds/beginning.wav");
@@ -104,15 +104,16 @@ function constructPathBFS(from, to){
     return [] // no path found
 }
 
-function Graph(levelAsString){
+function Level(levelAsString){
     this.levelAsString = levelAsString;
     this.graph = new Map();
     this.get = function(x, y){
         return this.graph.get(String(x) + " " + String(y));
     }
     this.build = function(){
+        wipeArrays([ghosts, dots, walls, pellets]);
         var rows = this.levelAsString.split("\n");    
-        //this.tileSize = canvas.width / (rows[0].length - 1);
+        this.tileSize = canvas.width / (rows[0].length - 1);
         for(var i = 0; i < rows.length; i++){
             for(var j = 0; j < rows[0].length; j++){        
                 var char = rows[i][j];
@@ -126,17 +127,44 @@ function Graph(levelAsString){
                 }  
                 // add the node to the graph
                 this.graph.set(String(j) + " " + String(i), node);
+                
+                if(char == "S"){
+                    // this is the starting position for pacman
+                    // move him to the starting location.
+                    pacman.resize((this.tileSize / 2) * 0.8); // tilesize/ 2 to fit in one tile
+                    // x 0.8 to make it fill up 80% of the tile instead of the whole space.
+                    pacman.stop(); // so velocity from previous level doesn't carry over.
+                    pacman.reposition(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2);
+                }
+                if(char == "."){ // put a dot there, but in the middle of the tile not on the edge.
+                    dots.push(new Dot(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.15));
+                }
 
+                if(char == "#"){ // it's wall, add a new wall to be rendered each cycle.
+                    walls.push(new Wall(j * this.tileSize, i * this.tileSize, this.tileSize, this.tileSize));
+                }  
+
+                if(char == "G"){
+                    ghosts.push(new Ghost(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize/2) * 0.5, (this.tileSize/2) * 0.5));
+                }
+
+                if(char == "H"){
+                    pellets.push(new PathPellet(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
+                }
+
+                if(char == "P"){
+                    pellets.push(new PowerPellet(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
+                }
             } // inner for
         } // outer for
         // second iteration to connect up all the nodes.
         for(var i = 0; i  < rows.length; i++){
             for(var j = 0; j < rows[0].length; j++){
-                var node = this.graph.get(String(j) + " " + String(i));
-                var aboveNode = this.graph.get(String(j) + " " + String(i-1));
-                var leftNode = this.graph.get(String(j - 1) + " " + String(i));
-                var rightNode = this.graph.get(String(j + 1) + " " + String(i));
-                var downNode = this.graph.get(String(j) + " " + String(i+1));
+                var node = this.get(j,i);
+                var aboveNode = this.get(j, i-1);
+                var leftNode = this.get(j - 1, i);
+                var rightNode = this.get(j + 1, i);
+                var downNode = this.get(j, i+1);
                 
                 // add the 4 surrounding nodes if they exist.
                 var neighbours = [aboveNode, leftNode, rightNode, downNode];
@@ -148,60 +176,7 @@ function Graph(levelAsString){
             }
         }
     }
-} // Graph
-
-
-
-// class that represents a level
-function Level(levelString){
-    this.levelString = levelString;
-    this.grid = [];
-    this.tileSize = 0;
-    this.build = function(){
-        // wipe the existing objects so the don't carry over.
-        wipeArrays([ghosts, dots, walls, pellets]);
-        var rows = this.levelString.split("\n");
-        // -1 for the newline character, this way we get the correct number.
-        this.tileSize = canvas.width / (rows[0].length - 1);
-        for(var row = 0; row < rows.length; row++){
-            var list = []
-            this.grid.push(list);
-            for(var col = 0; col < rows[0].length; col++){
-                var char = rows[row][col];
-                
-                if(char == "S"){
-                    // this is the starting position for pacman
-                    // move him to the starting location.
-                    pacman.resize((this.tileSize / 2) * 0.8); // tilesize/ 2 to fit in one tile
-                    // x 0.8 to make it fill up 80% of the tile instead of the whole space.
-                    pacman.stop(); // so velocity from previous level doesn't carry over.
-                    pacman.reposition(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2);
-                }
-                if(char == "."){ // put a dot there, but in the middle of the tile not on the edge.
-                    dots.push(new Dot(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.15));
-                }
-
-                if(char == "#"){ // it's wall, add a new wall to be rendered each cycle.
-                    walls.push(new Wall(col * this.tileSize, row * this.tileSize, this.tileSize, this.tileSize));
-                }  
-
-                if(char == "G"){
-                    ghosts.push(new Ghost(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2, (this.tileSize/2) * 0.5, (this.tileSize/2) * 0.5));
-                }
-
-                if(char == "H"){
-                    pellets.push(new PathPellet(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
-                }
-
-                if(char == "P"){
-                    pellets.push(new PowerPellet(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
-                }
-
-                list.push(char);
-            }
-        }
-    }
-}
+} // Level
 
 function Wall(x, y, width, height){
     this.x = x;
@@ -216,8 +191,6 @@ function Wall(x, y, width, height){
         ctx.strokeRect(this.x, this.y , this.width, this.height);
     }
 }
-
-
 
 
 function Ghost(x, y, width, height){
@@ -247,13 +220,13 @@ function Ghost(x, y, width, height){
     will make that ghost navigate towards that point on the board.
     */
     this.setDestination = function(x, y){ 
-        this.destination = graph.get(Math.floor(x / tileSize), Math.floor(y / tileSize));
+        this.destination = level.get(Math.floor(x / tileSize), Math.floor(y / tileSize));
     },
     this.update = function(){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
         // gets the corresponding Node from the graph
-        this.currentPoint = graph.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
+        this.currentPoint = level.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
         this.setDestination(pacman.x, pacman.y);
 
         if(time % 20 == 0){ // don't need to calculate path for every ghost on every tick
@@ -537,8 +510,8 @@ var ghosts = [];
 var pellets = [];
 var checker = new CollisionChecker(pacman, dots, walls, ghosts);
 
-function clear(col){
-    ctx.fillStyle = col || "black";
+function clear(colour){
+    ctx.fillStyle = colour || "black";
     ctx.fillRect(0, 0, canvas.height, canvas.width);
 }
 
