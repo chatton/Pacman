@@ -3,7 +3,7 @@ var ctx = canvas.getContext("2d");
 var angle = 0
 
 document.addEventListener("keydown", function(event){
-    pacman.move(event.keyCode);
+    pacman.move(event.keyCode); // the pacman move function can take an event code to act as signal
 }, false); 
 
 // keep track of "score", meaningless value to display during and at the end of the game.
@@ -41,6 +41,63 @@ function Node(isPassable, x, y){
     this.y = y;
 }
 
+/*
+Helper functions
+*/
+
+// function to clear the contents of an existing array
+function wipeArray(arr){
+    arr.splice(0, arr.length);
+}
+
+function exists(obj){
+    return typeof obj !== "undefined";
+}
+
+function cirlcesIntersect(obj1, obj2){
+    var dx = obj1.x - obj2.x; // distance in x co-ord
+    var dy = obj1.y - obj2.y; // distance in y co-ord
+    var distance = Math.sqrt((dx * dx) + (dy * dy)); // pythagoras' theorem
+    return distance < (obj1.radius + obj2.radius);
+}
+
+/*
+Function that performs a Breadth First Search (BFS)
+on a starting "from" point and constructs a list of Node
+objects that represent a path to the "to" point.
+*/
+function constructPathBFS(from, to){
+    var visited = new Set(); // keep track of the visited nodes
+    // using a set to get constant time element search to speed things up.
+    var queue = [from]; // the current node to be visited, starts off at the "from" starting point.
+    while(queue.length > 0){ // until there are no more nodes left
+        var element = queue.pop(); // examine the current node
+        visited.add(element); // we have now visited it.
+
+        if(element === to){ // if we've reached the destination
+            var path = []; // begin path construction
+            var current = element; 
+            while(current !== from){
+                path.push(current);
+                current = current.prev;
+            }
+            path.push(from);
+            path.reverse();// change from dest - start, to start - dest
+            return path; // the fully constructed path
+        }
+
+        element.neighbours.forEach(function(n){
+            // only care about a node if we haven't seen it
+            // and it isn't a wall
+            if(n.isPassable && !visited.has(n)){
+               n.prev = element;
+               queue.unshift(n); // add to the queue
+            }
+        });
+    }
+    return [] // no path found
+}
+
 function Graph(levelAsString){
     this.levelAsString = levelAsString;
     this.graph = new Map();
@@ -76,53 +133,18 @@ function Graph(levelAsString){
                 var downNode = this.graph.get(String(j) + " " + String(i+1));
                 
                 // add the 4 surrounding nodes if they exist.
-                if(typeof aboveNode !== "undefined" ){
-                    node.neighbours.push(aboveNode);
-                }
-
-                if(typeof leftNode !== "undefined" ){
-                    node.neighbours.push(leftNode);
-                }
-
-                if(typeof rightNode !== "undefined" ){
-                    node.neighbours.push(rightNode);
-                }
-
-                if(typeof downNode !== "undefined" ){
-                    node.neighbours.push(downNode);
-                }
-
+                var neighbours = [aboveNode, leftNode, rightNode, downNode];
+                neighbours.forEach(function(n){
+                    if(exists(n)){
+                        node.neighbours.push(n);
+                    }
+                });
             }
         }
-    },
-    this.getPathFromTo = function(from, to){
-        var visited = new Set();
-        var queue = [from];
-        while(queue.length > 0){
-            var element = queue.pop();
-            visited.add(element);
-
-            if(element === to){
-                var path = [];
-                var current = element;
-                while(current !== from){
-                    path.push(current);
-                    current = current.prev;
-                }
-                path.push(from);
-                path.reverse();
-                return path;
-            }
-            element.neighbours.forEach(function(n){
-                if(n.isPassable && !visited.has(n)){
-                   n.prev = element;
-                   queue.unshift(n);
-                }
-            });
-        }
-        return [] // no path found
     }
 } // Graph
+
+
 
 // class that represents a level
 function Level(levelString){
@@ -131,9 +153,12 @@ function Level(levelString){
     this.tileSize = 0;
     this.build = function(){
         // wipe the existing objects so the don't carry over.
-        ghosts.splice(0, ghosts.length);
-        dots.splice(0, dots.length);
-        walls.splice(0, walls.length);
+        wipeArray(ghosts);
+        //ghosts.splice(0, ghosts.length);
+        //dots.splice(0, dots.length);
+        wipeArray(dots);
+        //walls.splice(0, walls.length);
+        wipeArray(walls);
         var rows = this.levelString.split("\n");
         // -1 for the newline character, this way we get the correct number.
         this.tileSize = canvas.width / (rows[0].length - 1);
@@ -184,12 +209,7 @@ function Wall(x, y, width, height){
 }
 
 
-function cirlcesIntersect(obj1, obj2){
-    var dx = obj1.x - obj2.x; // distance in x co-ord
-    var dy = obj1.y - obj2.y; // distance in y co-ord
-    var distance = Math.sqrt((dx * dx) + (dy * dy)); // pythagoras' theorem
-    return distance < (obj1.radius + obj2.radius);
-}
+
 
 function Ghost(x, y, width, height){
     this.speed =  {
@@ -225,12 +245,11 @@ function Ghost(x, y, width, height){
         this.y += this.speed.dy;
         // gets the corresponding Node from the graph
         this.currentPoint = graph.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
-        //this.destination = graph.get(Math.floor(pacman.x / tileSize), Math.floor(pacman.y / tileSize));
         this.setDestination(pacman.x, pacman.y);
 
         if(time % 20 == 0){ // don't need to calculate path for every ghost on every tick
             // generate a path using BFS algorithm
-            var path = graph.getPathFromTo(this.currentPoint, this.destination);
+            var path = constructPathBFS(this.currentPoint, this.destination);
             if(path.length >= 2){ // there's more path to go, so go to the next node
                 this.currentTarget = path[1];
             } else { // already at the target, so just stay there until new target assigned.
@@ -279,8 +298,7 @@ function Dot(x, y, radius){
         ctx.fillStyle = "yellow";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
-    },
-    this.update = function(){}
+    }
 }
 
 
@@ -327,10 +345,12 @@ function Pacman(x, y, radius, speed){
     this.resize = function(radius){
         this.radius = radius;
     },
+    // halts all movement on pacman
     this.stop = function(){
         this.speed.dx = 0;
         this.speed.dy = 0;
     },
+    // provide a new location for pacman to spawn
     this.reposition = function(x, y){
         this.x = x;
         this.y = y;
@@ -346,8 +366,6 @@ function Pacman(x, y, radius, speed){
         ctx.rotate(this.direction.angle); // rotate the entire canvas
         ctx.translate(-this.x, -this.y); // offset based on the initial translation            
         
- 
-
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, Math.PI / 4 - this.mouthAnimation.angle, Math.PI * 1.75 + this.mouthAnimation.angle);
         ctx.lineTo(this.x, this.y);
@@ -392,10 +410,11 @@ function Pacman(x, y, radius, speed){
         this.mouthAnimation.update();
     }
     this.move = function(signal){
+        // signal can be a string or an event keyCode
         if(signal == 38 || signal == "UP"){
                 this.direction = {
                     name : "UP",
-                    angle : Math.PI * (3/2)
+                    angle : Math.PI * (3/2) // angle pacman should be facing when he is in this direction
                 };
                 this.speed.dy = -this.speed.magnitude;
                 this.speed.dx = 0;
@@ -486,41 +505,6 @@ function handleWallCollisions(pacman, wall){
     }
 }
 
-
-function ghostCollisions(ghost, wall){
-    // I found this algorithm on this SO post
-    // https://stackoverflow.com/questions/29861096/detect-which-side-of-a-rectangle-is-colliding-with-another-rectangle
-    
-    // handle collisions between pacman and wall as a rectangle to avoid corner issues.
-    // no need to treat pacman as a circle here.
-
-
-    var dx = (ghost.x  + ghost.width / 2) - (wall.x + wall.width / 2);
-    var dy = (ghost.y + ghost.height / 2) - (wall.y + wall.height /2)
-    var width = (ghost.width + wall.width) / 2;
-    var height = (ghost.height + wall.height) /2;
-    var crossWidth = width * dy;
-    var crossHeight = height * dx;
-
-    if(Math.abs(dx) <= width && Math.abs(dy) <= height){ // collision
-        if(crossWidth > crossHeight){ // ghost is below or to the left
-            if(crossWidth > - crossHeight){ // ghost is below
-                ghost.y = wall.y + wall.height + 1;
-            } else{ // ghost is to the left
-               ghost.x = wall.x - ghost.width - 1;
-            }
-        }else { // ghost is above or to the right
-            if(crossWidth > -crossHeight){ // ghost is to the right
-
-                ghost.x = wall.x + wall.width + 1;
-            } else{ // ghost is above
-
-                ghost.y = wall.y -ghost.height - 1;
-            }
-        }
-    }
-}
-
 var pacman = new Pacman(500, 500, 20);
 
 var dots = []
@@ -528,15 +512,12 @@ var walls = []
 var ghosts = []
 var checker = new CollisionChecker(pacman, dots, walls, ghosts);
 
-function clear(){
-    ctx.fillStyle = "black";
+function clear(col){
+    ctx.fillStyle = col || "black";
     ctx.fillRect(0, 0, canvas.height, canvas.width);
 }
 
-//var snd = new Audio("file.wav"); // buffers automatically when created
-
 function start(){
-    //snd.play();
     clear();
     time++;
     if(time > 100000){
@@ -548,9 +529,8 @@ function start(){
         ghost.draw();
         ghost.update();
     });
-    dots.forEach(function(obj){
-        obj.draw();
-        obj.update();
+    dots.forEach(function(dot){
+        dot.draw();
     });
     walls.forEach(function(wall){
         wall.draw();
