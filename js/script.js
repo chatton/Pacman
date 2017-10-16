@@ -50,6 +50,12 @@ function wipeArray(arr){
     arr.splice(0, arr.length);
 }
 
+function wipeArrays(arrays){
+    arrays.forEach(function(arr){
+        wipeArray(arr);
+    });
+}
+
 function exists(obj){
     return typeof obj !== "undefined";
 }
@@ -113,10 +119,10 @@ function Graph(levelAsString){
                 var node;
 
                 // determine if the node is passable.
-                if(char == "S" || char == "." || char == " " || char == "G"){
-                    node = new Node(true, j, i)
-                } else if(char == "#"){
+                if(char == "#"){
                     node = new Node(false,j, i);
+                } else {
+                    node = new Node(true, j, i);
                 }  
                 // add the node to the graph
                 this.graph.set(String(j) + " " + String(i), node);
@@ -153,12 +159,7 @@ function Level(levelString){
     this.tileSize = 0;
     this.build = function(){
         // wipe the existing objects so the don't carry over.
-        wipeArray(ghosts);
-        //ghosts.splice(0, ghosts.length);
-        //dots.splice(0, dots.length);
-        wipeArray(dots);
-        //walls.splice(0, walls.length);
-        wipeArray(walls);
+        wipeArrays([ghosts, dots, walls, pellets]);
         var rows = this.levelString.split("\n");
         // -1 for the newline character, this way we get the correct number.
         this.tileSize = canvas.width / (rows[0].length - 1);
@@ -186,6 +187,14 @@ function Level(levelString){
 
                 if(char == "G"){
                     ghosts.push(new Ghost(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2, (this.tileSize/2) * 0.5, (this.tileSize/2) * 0.5));
+                }
+
+                if(char == "H"){
+                    pellets.push(new PathPellet(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
+                }
+
+                if(char == "P"){
+                    pellets.push(new PowerPellet(col * this.tileSize + this.tileSize / 2, row * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
                 }
 
                 list.push(char);
@@ -303,8 +312,28 @@ function Dot(x, y, radius){
 
 
 // the things pacman eats to make the ghosts vulnerable/scared of pacman
-function PowerPellet(){
+function PowerPellet(x, y, radius){
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.draw = function(){
+        ctx.beginPath();
+        ctx.fillStyle = "red";
+        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+}
 
+function PathPellet(x, y, radius){
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.draw = function(){
+        ctx.beginPath();
+        ctx.fillStyle = "green";
+        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+        ctx.fill();
+    }
 }
 
 function Pacman(x, y, radius, speed){
@@ -460,11 +489,6 @@ function CollisionChecker(pacman, dots, walls, ghosts){
         for(var i = 0; i < walls.length; i++){
             handleWallCollisions(pacman, walls[i]);
         }
-        for(var i = 0; i < walls.length; i++){
-            ghosts.forEach(function(ghost){
-                //ghostCollisions(ghost, walls[i]);
-            });
-        }
     }
 }
 
@@ -507,9 +531,10 @@ function handleWallCollisions(pacman, wall){
 
 var pacman = new Pacman(500, 500, 20);
 
-var dots = []
-var walls = []
-var ghosts = []
+var dots = [];
+var walls = [];
+var ghosts = [];
+var pellets = [];
 var checker = new CollisionChecker(pacman, dots, walls, ghosts);
 
 function clear(col){
@@ -534,6 +559,9 @@ function start(){
     });
     walls.forEach(function(wall){
         wall.draw();
+    });
+    pellets.forEach(function(pellet){
+        pellet.draw();
     });
 
     checker.update();
