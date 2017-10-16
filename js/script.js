@@ -14,10 +14,14 @@ var tileSize;
 var time = 0;
 var showPath = false;
 var ghostsScared = false;
+var gameOver = false;
 
 // read in a file based on what the user provides.
 document.getElementById("fileinput").addEventListener("change", function(event){
     showPath = false;
+    gameOver = false;
+    ghostsScared = false;
+    pacman.lives = 2;
     var f = event.target.files[0];
     var reader = new FileReader();
     reader.onload = function(e){
@@ -479,9 +483,8 @@ function Pacman(x, y, radius, speed){
         ctx.restore();
     },
     this.die = function(){
-        this.lives--;
-        if(this.lives == 0){
-            console.log("GAME OVER!");
+        if(this.lives-- == 0){
+            gameOver = true;
         }
         this.stop();
         // send back to the starting point.
@@ -637,6 +640,15 @@ function start(){
     });
 
     checker.update();
+
+    if(gameOver){
+        clear();
+        ctx.font = "30px Arial";
+        ctx.fillStyle = "red";
+        ctx.fillText("Game Over", canvas.width / 2 ,canvas.height / 2);
+        ctx.fillText("Score: " + playerScore, canvas.width / 2, canvas.height / 2 - 100);
+    }
+
     window.requestAnimationFrame(start);
 }
 
