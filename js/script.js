@@ -22,6 +22,7 @@ document.getElementById("fileinput").addEventListener("change", function(event){
     gameOver = false;
     ghostsScared = false;
     pacman.lives = 2;
+    playerScore = 0;
     var f = event.target.files[0];
     var reader = new FileReader();
     reader.onload = function(e){
@@ -262,15 +263,36 @@ function Ghost(x, y, width, height){
                 ctx.lineTo(this.path[i].x * tileSize + tileSize/ 2, this.path[i].y * tileSize + tileSize /2 );
             }
             var lastNode = this.path[this.path.length - 1];
-            // draw a little dot at the end of the path
-            ctx.arc(lastNode.x * tileSize + tileSize / 2, lastNode.y * tileSize + tileSize/2, 2, 0, 2 * Math.PI);
-            ctx.stroke();
+            if(exists(lastNode)){
+                // draw a little dot at the end of the path
+                ctx.arc(lastNode.x * tileSize + tileSize / 2, lastNode.y * tileSize + tileSize/2, 2, 0, 2 * Math.PI);
+            }
+           ctx.stroke();
         }
     },
     /*
     providing an x/y co-ordinate to the setDestination method
     will make that ghost navigate towards that point on the board.
     */
+    this.die = function(){
+        var g = new Ghost(this.x, this.y, this.width, this.height);
+        g.destination = getRandomPoint();
+        g.currentPoint = getPoint(g.x, g.y);
+        playerScore += 200;
+        for(var i = 0; i < ghosts.length; i++){
+            if(ghosts[i] === this){
+                ghosts.splice(i, 1);
+                break;
+            }
+        }
+        console.log(ghosts);
+        setTimeout(function(){
+            console.log(g);
+            ghosts.push(g);
+            console.log(ghosts);
+        }, 5000);
+
+    }
     this.setDestination = function(x, y){ 
         this.destination = getPoint(x,y);
     },
