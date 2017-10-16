@@ -13,7 +13,7 @@ var level;
 var graph;
 var tileSize;
 var time = 0;
-var showPath = true;
+var showPath = false;
 
 // read in a file based on what the user provides.
 document.getElementById("fileinput").addEventListener("change", function(event){
@@ -337,7 +337,8 @@ function PowerPellet(x, y, radius){
         ctx.fillStyle = "red";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
-    }
+    },
+    this.onCollected = function(){}
 }
 
 function PathPellet(x, y, radius){
@@ -349,6 +350,12 @@ function PathPellet(x, y, radius){
         ctx.fillStyle = "green";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
+    },
+    this.onCollected = function(){
+        showPath = true; // AI ghost paths will now be displayed
+        setTimeout(function(){
+            showPath = false // lasts for 15 seconds, then sets it back to false.
+        },15000);
     }
 }
 
@@ -446,7 +453,6 @@ function Pacman(x, y, radius, speed){
         ctx.fill();
         ctx.strokeStyle = "white";
         ctx.stroke();
-
         ctx.restore();
     },
     this.update = function(){
@@ -504,6 +510,12 @@ function CollisionChecker(pacman, dots, walls, ghosts){
         }
         for(var i = 0; i < walls.length; i++){
             handleWallCollisions(pacman, walls[i]);
+        }
+        for(var i = 0; i < pellets.length; i++){
+            if(cirlcesIntersect(pacman, pellets[i])){
+                pellets[i].onCollected();
+                pellets.splice(i, 1);
+            }
         }
     }
 }
