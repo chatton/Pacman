@@ -16,6 +16,7 @@ var showPath = false;
 
 // read in a file based on what the user provides.
 document.getElementById("fileinput").addEventListener("change", function(event){
+    showPath = false;
     var f = event.target.files[0];
     var reader = new FileReader();
     reader.onload = function(e){
@@ -222,6 +223,8 @@ function Ghost(x, y, width, height){
         dy : 0,
         magnitude : 0.8
     },
+    this.borderCol = "black";
+    this.bodyCol = "blue";
     this.x = x;
     this.y = y;
     this.width = width;
@@ -229,14 +232,14 @@ function Ghost(x, y, width, height){
     this.path = [];
     this.draw = function(){
         ctx.beginPath();
-        ctx.fillStyle = "red";
+        ctx.fillStyle = this.bodyCol;
         ctx.arc(this.x , this.y, this.width, Math.PI, 2* Math.PI);
         ctx.lineTo(this.x + this.width, this.y + this.height);
         ctx.arc(this.x + this.width /2 , this.y + this.height, this.width * 0.5, 0, Math.PI);
         ctx.arc(this.x + this.width /2 - this.width , this.y + this.height, this.width * 0.5, 0, Math.PI);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = "black";
+        ctx.strokeStyle = this.borderCol;
         ctx.stroke();
 
         if(showPath){ // have the PathPellet power up.
@@ -268,9 +271,11 @@ function Ghost(x, y, width, height){
         this.currentPoint = getPoint(this.x, this.y);
         if(time % 30 == 0){ // don't need to calculate path for every ghost on every tick
             var pacmanPoint = getPacmanPoint();
+            this.borderCol = "black";
             //var pathToPacman = constructPathBFS(this.currentPoint, pacmanPoint);
             if(distanceBetween(this.currentPoint, pacmanPoint) <= 5){ // close to pacman
                 this.destination = pacmanPoint; // the ghost now moves towards him
+                this.borderCol = "red";
             }
 
             this.path = constructPathBFS(this.currentPoint, this.destination);
