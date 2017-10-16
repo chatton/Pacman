@@ -13,6 +13,7 @@ var level;
 var graph;
 var tileSize;
 var time = 0;
+var showPath = true;
 
 // read in a file based on what the user provides.
 document.getElementById("fileinput").addEventListener("change", function(event){
@@ -234,7 +235,23 @@ function Ghost(x, y, width, height){
         ctx.arc(this.x + this.width /2 - this.width , this.y + this.height, this.width * 0.5, 0, Math.PI);
         ctx.closePath();
         ctx.fill();
+        ctx.strokeStyle = "black";
         ctx.stroke();
+
+        if(showPath){
+            ctx.beginPath();
+            ctx.strokeStyle = "red";
+            ctx.moveTo(this.x, this.y);
+            for(var i = 1; i < this.path.length; i++){
+                ctx.lineTo(this.path[i].x * tileSize + tileSize/ 2, this.path[i].y * tileSize + tileSize /2 );
+            }
+            /*
+            this.path.forEach(function(node){
+                ctx.lineTo(node.x * tileSize + tileSize/ 2, node.y * tileSize + tileSize /2 );
+            });
+            */
+            ctx.stroke();
+        }
     },
     /*
     providing an x/y co-ordinate to the setDestination method
@@ -256,11 +273,11 @@ function Ghost(x, y, width, height){
                 this.destination = pacmanPoint; // the ghost now moves towards him
             }
 
-            var path = constructPathBFS(this.currentPoint, this.destination);
-            if(path.length >= 2){ // there's more path to go, so go to the next node
-                this.currentTarget = path[1];
+            this.path = constructPathBFS(this.currentPoint, this.destination);
+            if(this.path.length >= 2){ // there's more path to go, so go to the next node
+                this.currentTarget = this.path[1];
             } else { // already at the target.
-                this.currentTarget = path[0];
+                this.currentTarget = this.path[0];
                 this.destination = getRandomPoint(); // pick a new point and go there
             } 
 
