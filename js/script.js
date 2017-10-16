@@ -67,6 +67,17 @@ function cirlcesIntersect(obj1, obj2){
     return distance < (obj1.radius + obj2.radius);
 }
 
+// returns a random point on the level.
+function getRandomPoint(){
+    var point;
+    do {
+        var x = Math.random() * (canvas.width / level.tileSize); // number within the correct x/y range
+        var y = Math.random() * (canvas.height / level.tileSize);
+        point = level.get(Math.floor(x),Math.floor(y));
+    } while(!exists(point) || !point.isPassable); // ensure point is passable.
+    return point;
+}
+
 /*
 Function that performs a Breadth First Search (BFS)
 on a starting "from" point and constructs a list of Node
@@ -145,7 +156,9 @@ function Level(levelAsString){
                 }  
 
                 if(char == "G"){
-                    ghosts.push(new Ghost(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize/2) * 0.5, (this.tileSize/2) * 0.5));
+                    var g = new Ghost(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize/2) * 0.5, (this.tileSize/2) * 0.5);
+                    g.destination = getRandomPoint();
+                    ghosts.push(g);
                 }
 
                 if(char == "H"){
@@ -227,11 +240,14 @@ function Ghost(x, y, width, height){
         this.y += this.speed.dy;
         // gets the corresponding Node from the graph
         this.currentPoint = level.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
-        this.setDestination(pacman.x, pacman.y);
+        // this.setDestination(pacman.x, pacman.y);
 
         if(time % 20 == 0){ // don't need to calculate path for every ghost on every tick
             // generate a path using BFS algorithm
             var path = constructPathBFS(this.currentPoint, this.destination);
+            console.log(this.currentPoint);
+            console.log(this.destination);
+            console.log(path);
             if(path.length >= 2){ // there's more path to go, so go to the next node
                 this.currentTarget = path[1];
             } else { // already at the target, so just stay there until new target assigned.
