@@ -8,7 +8,6 @@ document.addEventListener("keydown", function(event){
 
 // keep track of "score", meaningless value to display during and at the end of the game.
 var playerScore = 0;
-var levelString = "";
 var level;
 var graph;
 var tileSize;
@@ -22,10 +21,7 @@ document.getElementById("fileinput").addEventListener("change", function(event){
     reader.onload = function(e){
         // content is a string containing the contents of the file.
         var content = e.target.result;  
-        levelString = content;
-        level = new Level(levelString);
-        //graph = new Graph(levelString);
-        //graph.build();
+        level = new Level(content);
         level.build();
         tileSize = level.tileSize;
         var sound = new Audio("res/sounds/beginning.wav");
@@ -242,14 +238,13 @@ function Ghost(x, y, width, height){
             ctx.beginPath();
             ctx.strokeStyle = "red";
             ctx.moveTo(this.x, this.y);
+            // draw lines all the way along the path the ghost will go
             for(var i = 1; i < this.path.length; i++){
                 ctx.lineTo(this.path[i].x * tileSize + tileSize/ 2, this.path[i].y * tileSize + tileSize /2 );
             }
-            /*
-            this.path.forEach(function(node){
-                ctx.lineTo(node.x * tileSize + tileSize/ 2, node.y * tileSize + tileSize /2 );
-            });
-            */
+            var lastNode = this.path[this.path.length - 1];
+            // draw a little dot at the end of the path
+            ctx.arc(lastNode.x * tileSize + tileSize / 2, lastNode.y * tileSize + tileSize/2, 2, 0, 2 * Math.PI);
             ctx.stroke();
         }
     },
@@ -266,7 +261,7 @@ function Ghost(x, y, width, height){
         // gets the corresponding Node from the graph
         //this.currentPoint = level.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
         this.currentPoint = getPoint(this.x, this.y);
-        if(time % 40 == 0){ // don't need to calculate path for every ghost on every tick
+        if(time % 30 == 0){ // don't need to calculate path for every ghost on every tick
             var pacmanPoint = getPacmanPoint();
             var pathToPacman = constructPathBFS(this.currentPoint, pacmanPoint);
             if(pathToPacman.length <= 5){ // close to pacman
@@ -338,7 +333,9 @@ function PowerPellet(x, y, radius){
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
     },
-    this.onCollected = function(){}
+    this.onCollected = function(){
+
+    }
 }
 
 function PathPellet(x, y, radius){
@@ -514,7 +511,7 @@ function CollisionChecker(pacman, dots, walls, ghosts){
         for(var i = 0; i < pellets.length; i++){
             if(cirlcesIntersect(pacman, pellets[i])){
                 pellets[i].onCollected();
-                pellets.splice(i, 1);
+                pellets.splice(i, 1); // remove the pellet from the game
             }
         }
     }
