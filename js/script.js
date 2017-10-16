@@ -83,6 +83,11 @@ function getPacmanPoint(){
     return getPoint(pacman.x, pacman.y);
 }
 
+function distanceBetween(point1, point2){
+    // use manhattan distance as metric
+    return Math.abs(point1.x - point2.x) + Math.abs(point1.y - point2.y);
+}
+
 /*
 Function that performs a Breadth First Search (BFS)
 on a starting "from" point and constructs a list of Node
@@ -234,7 +239,7 @@ function Ghost(x, y, width, height){
         ctx.strokeStyle = "black";
         ctx.stroke();
 
-        if(showPath){
+        if(showPath){ // have the PathPellet power up.
             ctx.beginPath();
             ctx.strokeStyle = "red";
             ctx.moveTo(this.x, this.y);
@@ -253,7 +258,7 @@ function Ghost(x, y, width, height){
     will make that ghost navigate towards that point on the board.
     */
     this.setDestination = function(x, y){ 
-        this.destination = level.get(Math.floor(x / tileSize), Math.floor(y / tileSize));
+        this.destination = getPoint(x,y);
     },
     this.update = function(){
         this.x += this.speed.dx;
@@ -263,8 +268,8 @@ function Ghost(x, y, width, height){
         this.currentPoint = getPoint(this.x, this.y);
         if(time % 30 == 0){ // don't need to calculate path for every ghost on every tick
             var pacmanPoint = getPacmanPoint();
-            var pathToPacman = constructPathBFS(this.currentPoint, pacmanPoint);
-            if(pathToPacman.length <= 5){ // close to pacman
+            //var pathToPacman = constructPathBFS(this.currentPoint, pacmanPoint);
+            if(distanceBetween(this.currentPoint, pacmanPoint) <= 5){ // close to pacman
                 this.destination = pacmanPoint; // the ghost now moves towards him
             }
 
