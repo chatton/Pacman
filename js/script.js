@@ -78,6 +78,14 @@ function getRandomPoint(){
     return point;
 }
 
+function getPoint(x, y){
+    return level.get(Math.floor(x / tileSize), Math.floor(y / tileSize));
+}
+
+function getPacmanPoint(){
+    return getPoint(pacman.x, pacman.y);
+}
+
 /*
 Function that performs a Breadth First Search (BFS)
 on a starting "from" point and constructs a list of Node
@@ -239,22 +247,24 @@ function Ghost(x, y, width, height){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
         // gets the corresponding Node from the graph
-        this.currentPoint = level.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
-        // this.setDestination(pacman.x, pacman.y);
-
-        if(time % 20 == 0){ // don't need to calculate path for every ghost on every tick
-            // generate a path using BFS algorithm
-            var path = constructPathBFS(this.currentPoint, this.destination);
-            console.log(this.currentPoint);
-            console.log(this.destination);
-            console.log(path);
-            if(path.length >= 2){ // there's more path to go, so go to the next node
-                this.currentTarget = path[1];
-            } else { // already at the target, so just stay there until new target assigned.
-                this.currentTarget = path[0]
+        //this.currentPoint = level.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
+        this.currentPoint = getPoint(this.x, this.y);
+        if(time % 40 == 0){ // don't need to calculate path for every ghost on every tick
+            var pacmanPoint = getPacmanPoint();
+            var pathToPacman = constructPathBFS(this.currentPoint, pacmanPoint);
+            if(pathToPacman.length <= 5){ // close to pacman
+                this.destination = pacmanPoint; // the ghost now moves towards him
             }
 
-          if(this.currentTarget !== this.currentPoint){                
+            var path = constructPathBFS(this.currentPoint, this.destination);
+            if(path.length >= 2){ // there's more path to go, so go to the next node
+                this.currentTarget = path[1];
+            } else { // already at the target.
+                this.currentTarget = path[0];
+                this.destination = getRandomPoint(); // pick a new point and go there
+            } 
+
+            if(this.currentTarget !== this.currentPoint){                
                 if(this.currentTarget.x > this.currentPoint.x){
                     this.move("RIGHT");
                 } else if(this.currentTarget.x < this.currentPoint.x){
@@ -264,8 +274,8 @@ function Ghost(x, y, width, height){
                 } else if(this.currentTarget.y > this.currentPoint.y){
                     this.move("DOWN")
                 }
-                
-            }
+            
+            }            
         }
     },
      this.move = function(signal){
