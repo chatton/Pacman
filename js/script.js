@@ -13,6 +13,7 @@ var graph;
 var tileSize;
 var time = 0;
 var showPath = false;
+var ghostsScared = false;
 
 // read in a file based on what the user provides.
 document.getElementById("fileinput").addEventListener("change", function(event){
@@ -65,7 +66,7 @@ function cirlcesIntersect(obj1, obj2){
     return distance < (obj1.radius + obj2.radius);
 }
 
-// returns a random point on the level.
+// returns a random point on the level. That is also traversable.
 function getRandomPoint(){
     var point;
     do {
@@ -129,9 +130,13 @@ function constructPathBFS(from, to){
 function Level(levelAsString){
     this.levelAsString = levelAsString;
     this.graph = new Map();
+    this.start;
     this.get = function(x, y){
         return this.graph.get(String(x) + " " + String(y));
-    }
+    },
+    this.getStartPoint = function(){
+        return this.start;
+    },
     this.build = function(){
         wipeArrays([ghosts, dots, walls, pellets]);
         var rows = this.levelAsString.split("\n");    
@@ -151,12 +156,14 @@ function Level(levelAsString){
                 this.graph.set(String(j) + " " + String(i), node);
                 
                 if(char == "S"){
+                    this.start = node;
                     // this is the starting position for pacman
                     // move him to the starting location.
                     pacman.resize((this.tileSize / 2) * 0.8); // tilesize/ 2 to fit in one tile
                     // x 0.8 to make it fill up 80% of the tile instead of the whole space.
                     pacman.stop(); // so velocity from previous level doesn't carry over.
                     pacman.reposition(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2);
+                    // pacman.reposition(j, i)
                 }
                 if(char == "."){ // put a dot there, but in the middle of the tile not on the edge.
                     dots.push(new Dot(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.15));
@@ -224,7 +231,7 @@ function Ghost(x, y, width, height){
         magnitude : 0.8
     },
     this.borderCol = "black";
-    this.bodyCol = "blue";
+    this.bodyCol = "green";
     this.x = x;
     this.y = y;
     this.width = width;
@@ -232,11 +239,11 @@ function Ghost(x, y, width, height){
     this.path = [];
     this.draw = function(){
         ctx.beginPath();
-        ctx.fillStyle = this.bodyCol;
+        ctx.fillStyle = ghostsScared ? "blue" : this.bodyCol;
         ctx.arc(this.x , this.y, this.width, Math.PI, 2* Math.PI);
         ctx.lineTo(this.x + this.width, this.y + this.height);
-        ctx.arc(this.x + this.width /2 , this.y + this.height, this.width * 0.5, 0, Math.PI);
-        ctx.arc(this.x + this.width /2 - this.width , this.y + this.height, this.width * 0.5, 0, Math.PI);
+        ctx.arc(this.x + this.width / 2, this.y + this.height, this.width * 0.5, 0, Math.PI);
+        ctx.arc(this.x + this.width / 2 - this.width , this.y + this.height, this.width * 0.5, 0, Math.PI);
         ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = this.borderCol;
@@ -244,7 +251,7 @@ function Ghost(x, y, width, height){
 
         if(showPath){ // have the PathPellet power up.
             ctx.beginPath();
-            ctx.strokeStyle = "red";
+            ctx.strokeStyle = ghostsScared ? "blue" : "red";
             ctx.moveTo(this.x, this.y);
             // draw lines all the way along the path the ghost will go
             for(var i = 1; i < this.path.length; i++){
@@ -266,14 +273,11 @@ function Ghost(x, y, width, height){
     this.update = function(){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
-        // gets the corresponding Node from the graph
-        //this.currentPoint = level.get(Math.floor(this.x / tileSize), Math.floor(this.y / tileSize));
         this.currentPoint = getPoint(this.x, this.y);
         if(time % 30 == 0){ // don't need to calculate path for every ghost on every tick
             var pacmanPoint = getPacmanPoint();
             this.borderCol = "black";
-            //var pathToPacman = constructPathBFS(this.currentPoint, pacmanPoint);
-            if(distanceBetween(this.currentPoint, pacmanPoint) <= 5){ // close to pacman
+            if(!ghostsScared && distanceBetween(this.currentPoint, pacmanPoint) <= 5){ // close to pacman
                 this.destination = pacmanPoint; // the ghost now moves towards him
                 this.borderCol = "red";
             }
@@ -344,7 +348,10 @@ function PowerPellet(x, y, radius){
         ctx.fill();
     },
     this.onCollected = function(){
-
+        ghostsScared = true; // ghosts can now be eaten by pacman.
+        setTimeout(function(){
+            ghostsScared = false; // lasts for 15 seconds.
+        },15000);
     }
 }
 
@@ -370,6 +377,7 @@ function Pacman(x, y, radius, speed){
     // mout animation object in charge of providing the "angle"
     // variable to add/remove to the ctx.arc of drawing pacman
     // to make the mouth open and close.
+    this.lives = 2;
     this.direction = {
         name : "RIGHT",
         angle : 0
@@ -413,6 +421,14 @@ function Pacman(x, y, radius, speed){
     this.reposition = function(x, y){
         this.x = x;
         this.y = y;
+    },
+    this.asRect = function(){
+        return {
+            x: this.x - this.radius,
+            y: this.y - this.radius,
+            height : 2 * this.radius,
+            width : 2 * this.radius
+        }
     }
     this.draw = function(){
         ctx.save();
@@ -462,6 +478,16 @@ function Pacman(x, y, radius, speed){
         ctx.stroke();
         ctx.restore();
     },
+    this.die = function(){
+        this.lives--;
+        if(this.lives == 0){
+            console.log("GAME OVER!");
+        }
+        this.stop();
+        // send back to the starting point.
+        var startingPoint = level.getStartPoint();
+        this.reposition(startingPoint.x * tileSize + tileSize / 2, startingPoint.y * tileSize + tileSize / 2);
+    }
     this.update = function(){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
@@ -524,9 +550,24 @@ function CollisionChecker(pacman, dots, walls, ghosts){
                 pellets.splice(i, 1); // remove the pellet from the game
             }
         }
+
+        ghosts.forEach(function(ghost){
+            if(rectanglesCollide(pacman.asRect(), ghost)){
+                var victim = ghostsScared ? ghost : pacman;
+                victim.die();
+            }
+        });
     }
 }
 
+function rectanglesCollide(rect1, rect2){
+    var dx = (rect1.x  + rect1.width / 2) - (rect2.x + rect2.width / 2);
+    var dy = (rect1.y + rect1.height / 2) - (rect2.y + rect2.height /2)
+    var width = (rect1.width + rect2.width) / 2;
+    var height = (rect1.height + rect2.height) /2;
+    return Math.abs(dx) <= width && Math.abs(dy) <= height;
+
+}
 
 function handleWallCollisions(pacman, wall){
     // I found this algorithm on this SO post
@@ -534,16 +575,12 @@ function handleWallCollisions(pacman, wall){
     
     // handle collisions between pacman and wall as a rectangle to avoid corner issues.
     // no need to treat pacman as a circle here.
-    pacmanRect = {
-        x: pacman.x - pacman.radius,
-        y: pacman.y - pacman.radius,
-        size : 2 * pacman.radius
-    }
+    var pacmanRect = pacman.asRect();
 
-    var dx = (pacmanRect.x  + pacmanRect.size / 2) - (wall.x + wall.width / 2);
-    var dy = (pacmanRect.y + pacmanRect.size / 2) - (wall.y + wall.height /2)
-    var width = (pacmanRect.size + wall.width) / 2;
-    var height = (pacmanRect.size + wall.height) /2;
+    var dx = (pacmanRect.x  + pacmanRect.width / 2) - (wall.x + wall.width / 2);
+    var dy = (pacmanRect.y + pacmanRect.height / 2) - (wall.y + wall.height /2)
+    var width = (pacmanRect.width + wall.width) / 2;
+    var height = (pacmanRect.height + wall.height) /2;
     var crossWidth = width * dy;
     var crossHeight = height * dx;
 
