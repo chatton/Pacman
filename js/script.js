@@ -38,16 +38,20 @@ document.getElementById("fileinput").addEventListener("change", function(event){
     reader.readAsText(f);
 }, false);
 
-function Node(isPassable, x, y){
-    this.isPassable = isPassable; // if it can be traversed.
-    this.neighbours = []; // the connected nodes.
-    this.x = x;
-    this.y = y;
-}
+
 
 /*
 Helper functions
 */
+
+function removeFromArray(obj, arr) {
+    for(var i = 0; i < arr.length; i++){
+        if(arr[i] === obj){
+            arr.splice(i, 1)
+            return;
+        }
+    }
+}
 
 // function to clear the contents of an existing array
 function wipeArray(arr){
@@ -82,10 +86,12 @@ function getRandomPoint(){
     return point;
 }
 
+// gets the corrseponding point on the graph.
 function getPoint(x, y){
     return level.get(Math.floor(x / tileSize), Math.floor(y / tileSize));
 }
 
+// easy access to pacman's location.
 function getPacmanPoint(){
     return getPoint(pacman.x, pacman.y);
 }
@@ -132,6 +138,13 @@ function constructPathBFS(from, to){
     return [] // no path found
 }
 
+function Node(isPassable, x, y){
+    this.isPassable = isPassable; // if it can be traversed.
+    this.neighbours = []; // the connected nodes.
+    this.x = x;
+    this.y = y;
+}
+
 function Level(levelAsString){
     this.levelAsString = levelAsString;
     this.graph = new Map();
@@ -149,14 +162,12 @@ function Level(levelAsString){
         for(var i = 0; i < rows.length; i++){
             for(var j = 0; j < rows[0].length; j++){        
                 var char = rows[i][j];
-                var node;
+                
 
                 // determine if the node is passable.
-                if(char == "#"){
-                    node = new Node(false,j, i);
-                } else {
-                    node = new Node(true, j, i);
-                }  
+                var passable = char != "#" // walls are NOT passable.
+                var node = new Node(passable, j, i);
+
                 // add the node to the graph
                 this.graph.set(String(j) + " " + String(i), node);
                 
@@ -270,29 +281,22 @@ function Ghost(x, y, width, height){
            ctx.stroke();
         }
     },
-    /*
-    providing an x/y co-ordinate to the setDestination method
-    will make that ghost navigate towards that point on the board.
-    */
+
     this.die = function(){
         var g = new Ghost(this.x, this.y, this.width, this.height);
         g.destination = getRandomPoint();
         g.currentPoint = getPoint(g.x, g.y);
         playerScore += 200;
-        for(var i = 0; i < ghosts.length; i++){
-            if(ghosts[i] === this){
-                ghosts.splice(i, 1);
-                break;
-            }
-        }
-        console.log(ghosts);
+        removeFromArray(this, ghosts);
         setTimeout(function(){
-            console.log(g);
             ghosts.push(g);
-            console.log(ghosts);
         }, 5000);
 
     }
+    /*
+    providing an x/y co-ordinate to the setDestination method
+    will make that ghost navigate towards that point on the board.
+    */
     this.setDestination = function(x, y){ 
         this.destination = getPoint(x,y);
     },
@@ -305,10 +309,11 @@ function Ghost(x, y, width, height){
             this.borderCol = "black";
             if(!ghostsScared && distanceBetween(this.currentPoint, pacmanPoint) <= 5){ // close to pacman
                 this.destination = pacmanPoint; // the ghost now moves towards him
-                this.borderCol = "red";
+                this.borderCol = "red"; // ghosts are drawn with a red outline.
             }
 
             this.path = constructPathBFS(this.currentPoint, this.destination);
+
             if(this.path.length >= 2){ // there's more path to go, so go to the next node
                 this.currentTarget = this.path[1];
             } else { // already at the target.
@@ -326,11 +331,11 @@ function Ghost(x, y, width, height){
                 } else if(this.currentTarget.y > this.currentPoint.y){
                     this.move("DOWN")
                 }
-            
-            }            
+            }
         }
     },
      this.move = function(signal){
+        this.currentDirection = signal;
         if(signal == "UP"){
                 this.speed.dy = -this.speed.magnitude;
                 this.speed.dx = 0;
@@ -448,6 +453,11 @@ function Pacman(x, y, radius, speed){
         this.x = x;
         this.y = y;
     },
+    /*
+    in some cases pacman is treated as a rectangle for
+    collision purposes, this method provides an easy
+    way to access that.
+    */
     this.asRect = function(){
         return {
             x: this.x - this.radius,
