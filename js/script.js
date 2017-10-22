@@ -40,6 +40,10 @@ document.getElementById("fileinput").addEventListener("change", function(event){
 
 
 
+
+
+
+
 /*
 Helper functions
 */
@@ -434,11 +438,140 @@ class PathPellet {
     }
 }
 
+
+
+class PositionComponent {
+    constructor(x, y){
+        this.x = x;
+        this.y = y;
+    }
+}
+
+class SpeedComponent {
+    constructor(dx, dy){
+        this.dx = dx;
+        this.dy = dy;
+    }
+}
+
+class VelocitySystem {
+    constructor(){
+        this.entities = [];
+    }
+
+    add(entity) {
+        this.entities.push(entity);
+    }
+
+    remove(entity) {
+        removeFromArray(entity, this.entities);
+    }
+
+    update() {
+        this.entities.forEach(function(entity){
+            var speed = entity.getComponent("SpeedComponent");
+            var position = entity.getComponent("PositionComponent");
+            position.x += speed.dx;
+            position.y += speed.dy;
+        });
+    }
+}
+
+class CircleComponent {
+    constructor(radius, startAngle, finishAngle) {
+        this.radius = radius;
+        this.startAngle = startAngle || 0;
+        this.finishAngle = finishAngle || 2 * Math.PI;
+    }
+}
+
+class ColourComponent {
+    constructor(fillStyle, strokeStyle){
+        this.fillStyle = fillStyle;
+        this.strokeStyle = strokeStyle;
+    }
+}
+
+class CircleDrawingSystem {
+
+    constructor(){
+        this.entities = [];
+    }
+
+    add(entity){
+        this.entities.push(entity);
+    }
+
+    remove(entity){
+        removeFromArray(entity, this.entities);
+    }
+
+    update() {
+        this.entities.forEach(function(entity){
+
+            var speed =  entity.getComponent("SpeedComponent");
+            var position = entity.getComponent("PositionComponent");
+            var colour = entity.getComponent("ColourComponent");
+            var circle = entity.getComponent("CircleComponent");
+
+            ctx.beginPath();
+            ctx.fillStyle = colour.fillStyle;
+            ctx.arc(position.x, position.y, circle.radius, circle.startAngle, circle.finishAngle);
+            ctx.fill();
+            ctx.strokeStyle = colour.strokeStyle;
+            ctx.stroke();
+        });
+    }
+
+} // Circle Drawing System
+
+
+class Entity {
+
+    constructor() {
+        this.components = new Map();
+    }
+
+    add(component) {
+        var componentType = component.constructor.name;
+        this.components.set(componentType, component);
+    }
+
+    remove(type){
+        var component = this.components.get(type);
+        this.components.delete(type);
+        return component;
+    }
+
+    getComponent(type) {
+        return this.components.get(type);
+    }
+}
+
+
+var pacman = new Entity();
+pacman.add(new SpeedComponent(10, 10));
+pacman.add(new PositionComponent(100, 100));
+pacman.add(new CircleComponent(25));
+pacman.add(new ColourComponent("yellow", "black"));
+
+
+var drawingSystem = new CircleDrawingSystem();
+drawingSystem.add(pacman);
+var velSystem = new VelocitySystem();
+velSystem.add(pacman);
+
+
+console.log(pacman.getComponent("SpeedComponent"));
+console.log(pacman.getComponent("PositionComponent"));
+
+
 class Pacman {
 
     constructor(x, y, radius, speed){
         this.x = x;
         this.y = y;
+        this.graphicalComponents = [];
         this.radius = radius;
         this.speed = speed || {
             dx : 0,
@@ -679,14 +812,16 @@ function handleWallCollisions(pacman, wall){
     }
 }
 
-var pacman = new Pacman(500, 500, 20);
+//var pacman = new Pacman(500, 500, 20);
 
+
+/*
 var dots = [];
 var walls = [];
 var ghosts = [];
 var pellets = [];
 var checker = new CollisionChecker(pacman, dots, walls, ghosts);
-
+*/
 function clear(colour){
     ctx.fillStyle = colour || "black";
     ctx.fillRect(0, 0, canvas.height, canvas.width);
@@ -694,6 +829,9 @@ function clear(colour){
 
 function start(){
     clear();
+    drawingSystem.update();
+    velSystem.update();
+    /*
     time++;
     if(time > 100000){
         time = 0;
@@ -723,6 +861,7 @@ function start(){
         ctx.fillText("Game Over", canvas.width / 2 ,canvas.height / 2);
         ctx.fillText("Score: " + playerScore, canvas.width / 2, canvas.height / 2 - 100);
     }
+    */
 
     window.requestAnimationFrame(start);
 }

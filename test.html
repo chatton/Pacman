@@ -1,0 +1,43 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="css/style.css">
+        <title>Pacman</title>
+
+    </head>
+
+    <body>
+        <input type="file" id="fileinput"/>
+        <canvas id="canvas" width="650" height="650"/>
+
+        <script>
+            var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+
+            // graphical components.
+
+            class CircleComponent {
+                
+                constructor(){
+                    this.x = 10;
+                    this.y = 20;
+                    this.radius = 20;
+                }
+
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+
+
+
+            var circle = new CircleComponent();
+            circle.draw();
+        </script>    
+    </body>
+
+</html>
