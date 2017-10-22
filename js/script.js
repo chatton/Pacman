@@ -138,24 +138,31 @@ function constructPathBFS(from, to){
     return [] // no path found
 }
 
-function Node(isPassable, x, y){
-    this.isPassable = isPassable; // if it can be traversed.
-    this.neighbours = []; // the connected nodes.
-    this.x = x;
-    this.y = y;
+class Node {
+    constructor(isPassable, x, y){
+        this.isPassable = isPassable; // if it can be traversed.
+        this.neighbours = []; // the connected nodes.
+        this.x = x;
+        this.y = y;
+    }
 }
 
-function Level(levelAsString){
-    this.levelAsString = levelAsString;
-    this.graph = new Map();
-    this.start;
-    this.get = function(x, y){
+class Level {
+    constructor(levelAsString){
+        this.levelAsString = levelAsString;
+        this.graph = new Map();
+        this.start;
+    }
+  
+    get(x, y){
         return this.graph.get(String(x) + " " + String(y));
-    },
-    this.getStartPoint = function(){
+    }
+
+    getStartPoint(){
         return this.start;
-    },
-    this.build = function(){
+    }
+
+    build(){
         wipeArrays([ghosts, dots, walls, pellets]);
         var rows = this.levelAsString.split("\n");    
         this.tileSize = canvas.width / (rows[0].length - 1);
@@ -225,12 +232,16 @@ function Level(levelAsString){
     }
 } // Level
 
-function Wall(x, y, width, height){
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-    this.draw = function(){
+class Wall {
+
+    constructor(x, y, width, height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+   
+    draw(){
         ctx.fillStyle = "black";
         ctx.fillRect(this.x, this.y , this.width, this.height);
         ctx.strokeStyle = "blue";
@@ -240,20 +251,24 @@ function Wall(x, y, width, height){
 }
 
 
-function Ghost(x, y, width, height){
-    this.speed =  {
-        dx : 0,
-        dy : 0,
-        magnitude : 0.8
-    },
-    this.borderCol = "black";
-    this.bodyCol = "green";
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-    this.path = [];
-    this.draw = function(){
+class Ghost {
+
+    constructor(x, y, width, height){
+        this.speed =  {
+            dx : 0,
+            dy : 0,
+            magnitude : 0.8
+        },
+        this.borderCol = "black";
+        this.bodyCol = "green";
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.path = []; 
+    }
+    
+    draw(){
         ctx.beginPath();
         ctx.fillStyle = ghostsScared ? "blue" : this.bodyCol;
         ctx.arc(this.x , this.y, this.width, Math.PI, 2* Math.PI);
@@ -280,9 +295,9 @@ function Ghost(x, y, width, height){
             }
            ctx.stroke();
         }
-    },
+    }
 
-    this.die = function(){
+    die(){
         var g = new Ghost(this.x, this.y, this.width, this.height);
         g.destination = getRandomPoint();
         g.currentPoint = getPoint(g.x, g.y);
@@ -297,10 +312,11 @@ function Ghost(x, y, width, height){
     providing an x/y co-ordinate to the setDestination method
     will make that ghost navigate towards that point on the board.
     */
-    this.setDestination = function(x, y){ 
+    setDestination(x, y){ 
         this.destination = getPoint(x,y);
-    },
-    this.update = function(){
+    }
+
+    update(){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
         this.currentPoint = getPoint(this.x, this.y);
@@ -333,8 +349,9 @@ function Ghost(x, y, width, height){
                 }
             }
         }
-    },
-     this.move = function(signal){
+    }
+
+     move(signal){
         this.currentDirection = signal;
         if(signal == "UP"){
                 this.speed.dy = -this.speed.magnitude;
@@ -354,11 +371,15 @@ function Ghost(x, y, width, height){
 
 
 // the things pacman eats to get points and progress
-function Dot(x, y, radius){
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.draw = function(){
+class Dot{
+    
+    constructor(x, y, radius){
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+    }
+
+    draw(){
         ctx.beginPath();
         ctx.fillStyle = "yellow";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
@@ -368,17 +389,21 @@ function Dot(x, y, radius){
 
 
 // the things pacman eats to make the ghosts vulnerable/scared of pacman
-function PowerPellet(x, y, radius){
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.draw = function(){
+class PowerPellet {
+    constructor(x, y, radius){
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+    }
+   
+    draw(){
         ctx.beginPath();
         ctx.fillStyle = "red";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
-    },
-    this.onCollected = function(){
+    }
+
+    onCollected(){
         ghostsScared = true; // ghosts can now be eaten by pacman.
         setTimeout(function(){
             ghostsScared = false; // lasts for 15 seconds.
@@ -386,17 +411,22 @@ function PowerPellet(x, y, radius){
     }
 }
 
-function PathPellet(x, y, radius){
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.draw = function(){
+class PathPellet {
+
+    constructor(x, y, radius){
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+    }
+   
+    draw(){
         ctx.beginPath();
         ctx.fillStyle = "green";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
-    },
-    this.onCollected = function(){
+    }
+
+    onCollected(){
         showPath = true; // AI ghost paths will now be displayed
         setTimeout(function(){
             showPath = false // lasts for 15 seconds, then sets it back to false.
@@ -404,61 +434,67 @@ function PathPellet(x, y, radius){
     }
 }
 
-function Pacman(x, y, radius, speed){
-    // mout animation object in charge of providing the "angle"
-    // variable to add/remove to the ctx.arc of drawing pacman
-    // to make the mouth open and close.
-    this.lives = 2;
-    this.direction = {
-        name : "RIGHT",
-        angle : 0
-    };
-    this.mouthAnimation = {
-        speed : 0.05,
-        gap : 0.3,
-        angle : 0,
-        direction : 1,
-        update : function(){
-            // depending on direction, the mouth will open or close.
-            if(this.direction == 1){
-                this.angle += this.speed; 
-            } else{
-                this.angle -= this.speed;   
-            }
-            
-            // stop it on the way back so it doesn't go back around the full circle.
-            if(this.angle > (1 - this.gap) || this.angle < 0) {
-                this.direction *= -1; // switch direction
-            }
-        } 
-    },
-    this.speed = speed || {
-        dx : 0,
-        dy : 0,
-        magnitude : 3
-    },
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.resize = function(radius){
-        this.radius = radius;
-    },
-    // halts all movement on pacman
-    this.stop = function(){
-        this.speed.dx = 0;
-        this.speed.dy = 0;
-    },
-    // provide a new location for pacman to spawn
-    this.reposition = function(x, y){
+class Pacman {
+
+    constructor(x, y, radius, speed){
         this.x = x;
         this.y = y;
-    },
+        this.radius = radius;
+        this.speed = speed || {
+            dx : 0,
+            dy : 0,
+            magnitude : 3
+        }
+        this.lives = 2;
+        this.direction = {
+            name : "RIGHT",
+            angle : 0
+        }
+
+        // mouth animation object in charge of providing the "angle"
+        // variable to add/remove to the ctx.arc of drawing pacman
+        // to make the mouth open and close.
+        this.mouthAnimation = {
+            speed : 0.05,
+            gap : 0.3,
+            angle : 0,
+            direction : 1,
+            update : function(){
+                // depending on direction, the mouth will open or close.
+                if(this.direction == 1){
+                    this.angle += this.speed; 
+                } else{
+                    this.angle -= this.speed;   
+                }
+                
+                // stop it on the way back so it doesn't go back around the full circle.
+                if(this.angle > (1 - this.gap) || this.angle < 0) {
+                    this.direction *= -1; // switch direction
+                }
+            } 
+        }
+    } // constructor 
+
+    resize(radius) {
+        this.radius = radius;
+    }
+
+    // halts all movement on pacman
+    stop(){
+        this.speed.dx = 0;
+        this.speed.dy = 0;
+    }
+    // provide a new location for pacman to spawn
+    reposition(x, y){
+        this.x = x;
+        this.y = y;
+    }
     /*
     in some cases pacman is treated as a rectangle for
     collision purposes, this method provides an easy
     way to access that.
     */
-    this.asRect = function(){
+    asRect(){
         return {
             x: this.x - this.radius,
             y: this.y - this.radius,
@@ -466,7 +502,7 @@ function Pacman(x, y, radius, speed){
             width : 2 * this.radius
         }
     }
-    this.draw = function(){
+    draw(){
         ctx.save();
         ctx.translate(this.x, this.y); // translates the entire co-ordinate system, x, y are our new 0,0
         // want to flip only if going left, otherwise, the eye is on the bottom left of pacman.
@@ -513,8 +549,8 @@ function Pacman(x, y, radius, speed){
         ctx.strokeStyle = "white";
         ctx.stroke();
         ctx.restore();
-    },
-    this.die = function(){
+    }
+    die(){
         if(this.lives-- == 0){
             gameOver = true;
         }
@@ -523,12 +559,12 @@ function Pacman(x, y, radius, speed){
         var startingPoint = level.getStartPoint();
         this.reposition(startingPoint.x * tileSize + tileSize / 2, startingPoint.y * tileSize + tileSize / 2);
     }
-    this.update = function(){
+    update(){
         this.x += this.speed.dx;
         this.y += this.speed.dy;
         this.mouthAnimation.update();
     }
-    this.move = function(signal){
+    move(signal){
         // signal can be a string or an event keyCode
         if(signal == 38 || signal == "UP"){
                 this.direction = {
@@ -564,11 +600,18 @@ function Pacman(x, y, radius, speed){
 
 // checks for collisions with JUST pacman into other objects.
 // Ghosts don't collide with the dots, just pacman and the walls.
-function CollisionChecker(pacman, dots, walls, ghosts){
+class CollisionChecker {
     // we don't want to heard multiple instances of the sound each time.
     // so make it a class variable and re-use so there's no overlap.
-    this.sound = new Audio("res/sounds/chomp.wav");
-    this.update = function(){
+    
+    constructor(dots, walls, ghosts){
+        this.sound = new Audio("res/sounds/chomp.wav");
+        this.dots = dots;
+        this.walls = walls;
+        this.ghosts = ghosts;
+    }
+
+    update(){
         for(var i = 0; i < dots.length; i++){
             if(cirlcesIntersect(pacman, dots[i])){
                 dots.splice(i, 1); // remove the dot from the game
