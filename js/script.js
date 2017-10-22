@@ -440,130 +440,6 @@ class PathPellet {
 
 
 
-class PositionComponent {
-    constructor(x, y){
-        this.x = x;
-        this.y = y;
-    }
-}
-
-class SpeedComponent {
-    constructor(dx, dy){
-        this.dx = dx;
-        this.dy = dy;
-    }
-}
-
-class VelocitySystem {
-    constructor(){
-        this.entities = [];
-    }
-
-    add(entity) {
-        this.entities.push(entity);
-    }
-
-    remove(entity) {
-        removeFromArray(entity, this.entities);
-    }
-
-    update() {
-        this.entities.forEach(function(entity){
-            var speed = entity.getComponent("SpeedComponent");
-            var position = entity.getComponent("PositionComponent");
-            position.x += speed.dx;
-            position.y += speed.dy;
-        });
-    }
-}
-
-class CircleComponent {
-    constructor(radius, startAngle, finishAngle) {
-        this.radius = radius;
-        this.startAngle = startAngle || 0;
-        this.finishAngle = finishAngle || 2 * Math.PI;
-    }
-}
-
-class ColourComponent {
-    constructor(fillStyle, strokeStyle){
-        this.fillStyle = fillStyle;
-        this.strokeStyle = strokeStyle;
-    }
-}
-
-class CircleDrawingSystem {
-
-    constructor(){
-        this.entities = [];
-    }
-
-    add(entity){
-        this.entities.push(entity);
-    }
-
-    remove(entity){
-        removeFromArray(entity, this.entities);
-    }
-
-    update() {
-        this.entities.forEach(function(entity){
-
-            var speed =  entity.getComponent("SpeedComponent");
-            var position = entity.getComponent("PositionComponent");
-            var colour = entity.getComponent("ColourComponent");
-            var circle = entity.getComponent("CircleComponent");
-
-            ctx.beginPath();
-            ctx.fillStyle = colour.fillStyle;
-            ctx.arc(position.x, position.y, circle.radius, circle.startAngle, circle.finishAngle);
-            ctx.fill();
-            ctx.strokeStyle = colour.strokeStyle;
-            ctx.stroke();
-        });
-    }
-
-} // Circle Drawing System
-
-
-class Entity {
-
-    constructor() {
-        this.components = new Map();
-    }
-
-    add(component) {
-        var componentType = component.constructor.name;
-        this.components.set(componentType, component);
-    }
-
-    remove(type){
-        var component = this.components.get(type);
-        this.components.delete(type);
-        return component;
-    }
-
-    getComponent(type) {
-        return this.components.get(type);
-    }
-}
-
-
-var pacman = new Entity();
-pacman.add(new SpeedComponent(10, 10));
-pacman.add(new PositionComponent(100, 100));
-pacman.add(new CircleComponent(25));
-pacman.add(new ColourComponent("yellow", "black"));
-
-
-var drawingSystem = new CircleDrawingSystem();
-drawingSystem.add(pacman);
-var velSystem = new VelocitySystem();
-velSystem.add(pacman);
-
-
-console.log(pacman.getComponent("SpeedComponent"));
-console.log(pacman.getComponent("PositionComponent"));
 
 
 class Pacman {
@@ -827,42 +703,239 @@ function clear(colour){
     ctx.fillRect(0, 0, canvas.height, canvas.width);
 }
 
+
+
+
+
+
+
+
+
+
+
+class PositionComponent {
+    constructor(x, y){
+        this.x = x;
+        this.y = y;
+    }
+}
+
+class SpeedComponent {
+    constructor(dx, dy){
+        this.dx = dx;
+        this.dy = dy;
+    }
+}
+
+class VelocitySystem {
+    
+    constructor(){
+        this.entities = [];
+        this.requirements = [
+            "PositionComponent",
+            "SpeedComponent"
+        ];
+    }
+
+    add(entity) {
+        this.entities.push(entity);
+    }
+
+    remove(entity) {
+        removeFromArray(entity, this.entities);
+    }
+
+    update() {
+        this.entities.forEach(function(entity){
+            var speed = entity.getComponent("SpeedComponent");
+            var position = entity.getComponent("PositionComponent");
+            position.x += speed.dx;
+            position.y += speed.dy;
+        });
+    }
+}
+
+
+class CircleComponent {
+    constructor(radius, startAngle, finishAngle) {
+        this.radius = radius;
+        this.startAngle = startAngle || 0;
+        this.finishAngle = finishAngle || 2 * Math.PI;
+    }
+}
+
+class ColourComponent {
+    constructor(fillStyle, strokeStyle){
+        this.fillStyle = fillStyle;
+        this.strokeStyle = strokeStyle;
+    }
+}
+
+class PlayerControlledComponent {
+    constructor(){
+
+    }
+}
+
+class CircleDrawingSystem {
+
+    constructor(){
+        this.entities = [];
+        this.requirements = [
+            "CircleComponent",
+            "PositionComponent",
+            "ColourComponent"
+        ];
+    }
+
+    add(entity){
+        this.entities.push(entity);
+    }
+
+    remove(entity){
+        removeFromArray(entity, this.entities);
+    }
+
+    update() {
+        this.entities.forEach(function(entity){
+            var position = entity.getComponent("PositionComponent");
+            var colour = entity.getComponent("ColourComponent");
+            var circle = entity.getComponent("CircleComponent");
+
+            ctx.beginPath();
+            ctx.fillStyle = colour.fillStyle;
+            ctx.arc(position.x, position.y, circle.radius, circle.startAngle, circle.finishAngle);
+            ctx.fill();
+            ctx.strokeStyle = colour.strokeStyle;
+            ctx.stroke();
+        });
+    }
+
+} // Circle Drawing System
+
+class PlayingConstrolSystem {
+    constructor(){
+        this.entities = [];
+        this.requirements = [
+            "PlayerControlledComponent",
+            "SpeedComponent"
+        ];
+    }
+    update() {
+
+    }
+}
+
+class Entity {
+
+    constructor(engine) {
+        this.engine = engine;
+        this.components = new Map();
+    }
+
+    add(component) {
+        var componentType = component.constructor.name;
+        this.components.set(componentType, component);
+    }
+
+    removeComponent(type){
+        // update all systems.
+        var component = this.components.get(type);
+        this.components.delete(type);
+        return component;
+    }
+
+    getComponent(type) {
+        return this.components.get(type);
+    }
+
+
+    remove(){
+        this.engine.removeEntity(this);
+    }
+}
+
+
+
+class Engine {
+
+    constructor() {
+        this.systems = []
+    }
+
+    removeEntity(entity) {
+        for(var i = 0; i < this.systems.length; i++){
+            if(this.systemHasEntity(entity)){
+                this.removeEntityFromSystem(entity);
+            }
+        }
+    }
+    
+    systemHasEntity(system, entity){
+        return system.entities.indexOf(entity) > -1;
+    }
+
+    removeEntityFromSystem(entity, system){
+        removeFromArray(entity, system.entities);
+    }
+
+    addSystem(system) {
+        this.systems.push(system);
+    }
+
+    addEntity(entity) {
+        for(var i = 0; i < this.systems.length; i++){
+            if(this.entityMeetsRequirementsFor(entity, this.systems[i])){
+                this.systems[i].add(entity);
+            }
+        }
+    }
+
+    entityMeetsRequirementsFor(entity, system) {
+        var requirements = system.requirements;
+        for(var i = 0; i < requirements.length; i++){
+            if(entity.getComponent(requirements[i]) === undefined){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    update() {
+        this.systems.forEach(function(sys){
+            sys.update();
+        });
+    }
+}
+
+var engine = new Engine();
+
+var pacman = new Entity(engine);
+
+pacman.add(new SpeedComponent(10, 10));
+pacman.add(new PositionComponent(100, 100));
+pacman.add(new CircleComponent(25));
+pacman.add(new ColourComponent("yellow", "black"));
+
+
+var dot = new Entity(engine);
+dot.add(new PositionComponent(200, 200));
+dot.add(new CircleComponent(15));
+dot.add(new ColourComponent("yellow", "black"));
+
+var drawingSystem = new CircleDrawingSystem();
+var velSystem = new VelocitySystem();
+
+engine.addSystem(drawingSystem);
+engine.addSystem(velSystem);
+
+engine.addEntity(pacman);
+engine.addEntity(dot);
+
+
 function start(){
     clear();
-    drawingSystem.update();
-    velSystem.update();
-    /*
-    time++;
-    if(time > 100000){
-        time = 0;
-    }
-    pacman.draw();
-    pacman.update();
-    ghosts.forEach(function(ghost){
-        ghost.draw();
-        ghost.update();
-    });
-    dots.forEach(function(dot){
-        dot.draw();
-    });
-    walls.forEach(function(wall){
-        wall.draw();
-    });
-    pellets.forEach(function(pellet){
-        pellet.draw();
-    });
-
-    checker.update();
-
-    if(gameOver){
-        clear();
-        ctx.font = "30px Arial";
-        ctx.fillStyle = "red";
-        ctx.fillText("Game Over", canvas.width / 2 ,canvas.height / 2);
-        ctx.fillText("Score: " + playerScore, canvas.width / 2, canvas.height / 2 - 100);
-    }
-    */
-
+    engine.update();
     window.requestAnimationFrame(start);
 }
 
