@@ -1,6 +1,13 @@
 
 // Components are bags of data with no behaviour, they are operated on by the different systems.
 
+
+class SeekerComponent {
+    constructor(x, y){
+        this.destination = {x:x, y:y};
+    }
+}
+
 class RectangleComponent {
     constructor(width, height){
         this.width = width;
@@ -74,6 +81,69 @@ class VelocitySystem {
     }
 }
 
+class SeekerSystem {
+    
+    constructor(){
+        this.entities = [];
+        this.requirements = [
+            "PositionComponent",
+            "SpeedComponent",
+            "SeekerComponent"
+        ];
+    }
+
+    add(entity) {
+        this.entities.push(entity);
+    }
+
+    remove(entity) {
+        removeFromArray(entity, this.entities);
+    }
+
+    update() {
+        this.entities.forEach(function(entity){
+            var seeker = entity.getComponent("SeekerComponent");
+            var position = entity.getComponent("PositionComponent");
+            var speed = entity.getComponent("SpeedComponent");
+
+
+            var dest = seeker.destination; // this is where the ghost is trying to go.
+            var destinationPoint = level.get(dest.x, dest.y); // get the corresponding node in the level.
+
+            var x = Math.floor(position.x / tileSize);
+            var y = Math.floor(position.y / tileSize);
+
+            var currentPoint = level.get(x, y); // where the ghost currently is.
+            var path = constructPathBFS(currentPoint, destinationPoint);
+            //console.log(path);
+            var target;
+            if(path.length >= 2){ // there's more path to go
+                target = path[1];
+            } else {
+                var newPoint = getRandomPoint();
+                seeker.destination = {x:newPoint.x, y:newPoint.y}; // ghost will now try and move here.
+                target = newPoint;
+            }
+    
+            if(currentPoint !== target){ // haven't reached the target yet
+                if (target.x > currentPoint.x){
+                    speed.dx = 1; // go right
+                    speed.dy = 0;
+                } else if (target.x < currentPoint.x){
+                    speed.dx = -1; // go left
+                    speed.dy = 0;
+                } else if(target.y < currentPoint.y){
+                    speed.dx = 0;
+                    speed.dy = -1; // go up
+                } else if (target.y > currentPoint.y){
+                    speed.dx = 0;
+                    speed.dy = 1; // go down
+                }
+            }
+        });
+    }
+}
+
 
 class CircleDrawingSystem {
 
@@ -140,7 +210,7 @@ class RectangleDrawingSystem {
             ctx.beginPath();
             ctx.fillStyle = colour.fillStyle;
             ctx.strokeStyle = colour.strokeStyle;
-            ctx.rect(position.x, position.y, rect.width, rect.height)
+            ctx.rect(position.x, position.y, rect.width, rect.height);
             ctx.fill();
             ctx.stroke();
         });
@@ -247,6 +317,8 @@ class Engine {
 var engine = new Engine();
 engine.addSystem(new CircleDrawingSystem());
 engine.addSystem(new RectangleDrawingSystem());
+engine.addSystem(new SeekerSystem());
+engine.addSystem(new VelocitySystem());
 
 // functions to create different entities in the game.
 function makeDot(x, y, radius){
@@ -267,37 +339,15 @@ function makeWall(x, y, width, height){
     return wall;
 }
 
-
-/*
-var pacman2 = new Entity(engine);
-
-pacman2.add(new SpeedComponent(10, 10));
-pacman2.add(new PositionComponent(100, 100));
-pacman2.add(new CircleComponent(25));
-pacman2.add(new ColourComponent("yellow", "black"));
-
-
-var dot = new Entity(engine);
-dot.add(new PositionComponent(200, 200));
-dot.add(new CircleComponent(15));
-dot.add(new ColourComponent("yellow", "black"));
-
-var drawingSystem = new CircleDrawingSystem();
-var velSystem = new VelocitySystem();
-
-engine.addSystem(drawingSystem);
-engine.addSystem(velSystem);
-
-engine.addEntity(pacman2);
-engine.addEntity(dot);
-
-*/
-
-
-
-
-
-
+function makeGhost(x, y, width, height, tileSize) {
+    var ghost = new Entity(engine);
+    ghost.add(new PositionComponent(x * tileSize + tileSize / 2, y * tileSize + tileSize / 2));
+    ghost.add(new RectangleComponent(width * (tileSize / 2), height * (tileSize / 2)));
+    ghost.add(new ColourComponent("purple", "green"));
+    ghost.add(new SeekerComponent(1, 1));
+    ghost.add(new SpeedComponent(0,0));
+    return ghost;
+}
 
 
 
@@ -510,9 +560,8 @@ class Level {
                 }  
 
                 if(char == "G"){
-                    var g = new Ghost(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize/2) * 0.5, (this.tileSize/2) * 0.5);
-                    g.destination = getRandomPoint();
-                    ghosts.push(g);
+                    var ghost = makeGhost(j, i ,0.5,0.5, this.tileSize);
+                    engine.addEntity(ghost);
                 }
 
                 if(char == "H"){
@@ -544,24 +593,6 @@ class Level {
         }
     }
 } // Level
-
-class Wall {
-
-    constructor(x, y, width, height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
-   
-    draw() {
-        ctx.fillStyle = "black";
-        ctx.fillRect(this.x, this.y , this.width, this.height);
-        ctx.strokeStyle = "blue";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(this.x, this.y , this.width, this.height);
-    }
-}
 
 
 class Ghost {
@@ -682,25 +713,6 @@ class Ghost {
     }
 }
 
-
-// the things pacman eats to get points and progress
-class Dot{
-    
-    constructor(x, y, radius){
-        this.x = x;
-        this.y = y;
-        this.radius = radius;
-    }
-
-    draw(){
-        ctx.beginPath();
-        ctx.fillStyle = "yellow";
-        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-        ctx.fill();
-    }
-}
-
-
 // the things pacman eats to make the ghosts vulnerable/scared of pacman
 class PowerPellet {
     constructor(x, y, radius){
@@ -746,9 +758,6 @@ class PathPellet {
         },15000);
     }
 }
-
-
-
 
 
 class Pacman {
@@ -1013,10 +1022,6 @@ function clear(colour){
     ctx.fillStyle = colour || "black";
     ctx.fillRect(0, 0, canvas.height, canvas.width);
 }
-
-
-
-
 
 
 function start(){
