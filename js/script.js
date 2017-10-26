@@ -1,7 +1,6 @@
 
 // Components are bags of data with no behaviour, they are operated on by the different systems.
 
-
 class SeekerComponent {
     constructor(x, y){
         this.destination = {x:x, y:y};
@@ -90,6 +89,7 @@ class SeekerSystem {
             "SpeedComponent",
             "SeekerComponent"
         ];
+        this.time = 0;
     }
 
     add(entity) {
@@ -101,7 +101,14 @@ class SeekerSystem {
     }
 
     update() {
-        this.entities.forEach(function(entity){
+        this.time++;
+        if(!(this.time % 30 == 0)){ // don't want to calculate the path every cycle.
+            return;
+        }
+
+        for(var i = 0; i < this.entities.length; i++){
+
+            var entity = this.entities[i];
             var seeker = entity.getComponent("SeekerComponent");
             var position = entity.getComponent("PositionComponent");
             var speed = entity.getComponent("SpeedComponent");
@@ -115,7 +122,7 @@ class SeekerSystem {
 
             var currentPoint = level.get(x, y); // where the ghost currently is.
             var path = constructPathBFS(currentPoint, destinationPoint);
-            //console.log(path);
+
             var target;
             if(path.length >= 2){ // there's more path to go
                 target = path[1];
@@ -140,21 +147,18 @@ class SeekerSystem {
                     speed.dy = 1; // go down
                 }
             }
-        });
+        }
+
     }
 }
 
 
-class CircleDrawingSystem {
-
+class RenderSystem {
     constructor(){
+        this.requirements = ["RenderComponent"]
         this.entities = [];
-        this.requirements = [
-            "CircleComponent",
-            "PositionComponent",
-            "ColourComponent"
-        ];
     }
+
 
     add(entity){
         this.entities.push(entity);
@@ -164,60 +168,71 @@ class CircleDrawingSystem {
         removeFromArray(entity, this.entities);
     }
 
-    update() {
+    update(){
         this.entities.forEach(function(entity){
-            // this system draws every entity that can is a circle.
-            var position = entity.getComponent("PositionComponent");
-            var colour = entity.getComponent("ColourComponent");
-            var circle = entity.getComponent("CircleComponent");
-
-            ctx.beginPath();
-            ctx.fillStyle = colour.fillStyle;
-            ctx.arc(position.x, position.y, circle.radius, circle.startAngle, circle.finishAngle);
-            ctx.fill();
-            ctx.strokeStyle = colour.strokeStyle;
-            ctx.stroke();
-        });
-    }
-
-} // Circle Drawing System
-
-class RectangleDrawingSystem {
-    constructor(){
-        this.entities = [];
-        this.requirements = [
-            "RectangleComponent",
-            "PositionComponent",
-            "ColourComponent"
-        ];
-    }
-
-    add(entity){
-        this.entities.push(entity);
-    }
-
-    remove(entity){
-        removeFromArray(entity, this.entities);
-    }
-
-    update() {
-        this.entities.forEach(function(entity){
-            // this system draws every entity that can is a circle.
-            var position = entity.getComponent("PositionComponent");
-            var colour = entity.getComponent("ColourComponent");
-            var rect = entity.getComponent("RectangleComponent");
-
-            ctx.beginPath();
-            ctx.fillStyle = colour.fillStyle;
-            ctx.strokeStyle = colour.strokeStyle;
-            ctx.rect(position.x, position.y, rect.width, rect.height);
-            ctx.fill();
-            ctx.stroke();
+            // "RenderComponent" can be any type of component that can be rendered. E.g. "Circle"/"Rectangle"/"Pacman"
+            var renderComponent = entity.getComponent("RenderComponent");
+            renderComponent.render();
         });
     }
 }
 
-class PlayingConstrolSystem {
+class RenderComponent {
+
+    constructor(renderable){
+        this.renderable = renderable;
+    }
+
+    render(){
+        this.renderable.render();
+    }
+}
+
+
+class CircleRenderer {
+
+    constructor(entity) {
+        this.entity = entity;
+    }
+
+    render(){
+        var position = this.entity.getComponent("PositionComponent");
+        var colour = this.entity.getComponent("ColourComponent");
+        var circle = this.entity.getComponent("CircleComponent");
+
+        ctx.beginPath();
+        ctx.fillStyle = colour.fillStyle;
+        ctx.arc(position.x, position.y, circle.radius, circle.startAngle, circle.finishAngle);
+        ctx.fill();
+        ctx.strokeStyle = colour.strokeStyle;
+        ctx.stroke();
+    }
+}
+
+class RectangleRenderer {
+
+    constructor(entity){
+        this.entity = entity;
+    }
+
+    render(){
+        // this system draws every entity that can is a circle.
+        var position = this.entity.getComponent("PositionComponent");
+        var colour = this.entity.getComponent("ColourComponent");
+        var rect = this.entity.getComponent("RectangleComponent");
+
+        ctx.beginPath();
+        ctx.fillStyle = colour.fillStyle;
+        ctx.strokeStyle = colour.strokeStyle;
+        ctx.rect(position.x, position.y, rect.width, rect.height);
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+
+
+class PlayerControlSystem {
     constructor() {
         this.entities = [];
         this.requirements = [
@@ -244,6 +259,7 @@ class Entity {
     add(component) {
         var componentType = component.constructor.name;
         this.components.set(componentType, component);
+        return this;
     }
 
     removeComponent(type){
@@ -315,10 +331,10 @@ class Engine {
 }
 
 var engine = new Engine();
-engine.addSystem(new CircleDrawingSystem());
-engine.addSystem(new RectangleDrawingSystem());
-engine.addSystem(new SeekerSystem());
-engine.addSystem(new VelocitySystem());
+engine.addSystem(new SeekerSystem()); // seeker system handles any entity that has a "target", e.g. a ghost looking for pacman
+engine.addSystem(new VelocitySystem()); // handles all movement.
+engine.addSystem(new RenderSystem()); // handles drawing of entities that can be drawn.
+// engine.addSystem(new PlayerControlSystem());
 
 // functions to create different entities in the game.
 function makeDot(x, y, radius){
@@ -326,6 +342,7 @@ function makeDot(x, y, radius){
     dot.add(new PositionComponent(x, y)); // dot consists of a position
     dot.add(new CircleComponent(radius)); // a radius
     dot.add(new ColourComponent("yellow", "black")); // and colour.
+    dot.add(new RenderComponent(new CircleRenderer(dot)));
     // TODO add collidable component.
     return dot;
 }
@@ -335,18 +352,19 @@ function makeWall(x, y, width, height){
     wall.add(new PositionComponent(x, y));
     wall.add(new RectangleComponent(width, height));
     wall.add(new ColourComponent("black", "blue"));
+    wall.add(new RenderComponent(new RectangleRenderer(wall)));
     // add collidable component.
     return wall;
 }
 
 function makeGhost(x, y, width, height, tileSize) {
     var ghost = new Entity(engine);
-    ghost.add(new PositionComponent(x * tileSize + tileSize / 2, y * tileSize + tileSize / 2));
-    ghost.add(new RectangleComponent(width * (tileSize / 2), height * (tileSize / 2)));
-    ghost.add(new ColourComponent("purple", "green"));
-    ghost.add(new SeekerComponent(1, 1));
-    ghost.add(new SpeedComponent(0,0));
-    return ghost;
+    return ghost.add(new PositionComponent(x * tileSize + tileSize / 2, y * tileSize + tileSize / 2))
+            .add(new RectangleComponent(width * (tileSize / 2), height * (tileSize / 2)))
+            .add(new ColourComponent("purple", "green"))
+            .add(new SeekerComponent(1, 1))
+            .add(new SpeedComponent(0,0))
+            .add(new RenderComponent(new RectangleRenderer(ghost)))
 }
 
 
@@ -924,6 +942,88 @@ class Pacman {
         }
     }
 }
+
+/*
+class PacmanRenderer {
+    constructor(pacman){
+        this.pacman = pacman;
+        this.mouthAnimation = {
+            speed : 0.05,
+            gap : 0.3,
+            angle : 0,
+            direction : 1,
+            update : function(){
+                // depending on direction, the mouth will open or close.
+                if(this.direction == 1){
+                    this.angle += this.speed; 
+                } else{
+                    this.angle -= this.speed;   
+                }
+                
+                // stop it on the way back so it doesn't go back around the full circle.
+                if(this.angle > (1 - this.gap) || this.angle < 0) {
+                    this.direction *= -1; // switch direction
+                }
+            } 
+        }
+    }
+
+    render(){
+        var position = pacman.getComponent("PositionComponent");
+        var colour = pacman.getComponent("ColourComponent");
+        var direction = pacman.getComponent("DirectionComponent");
+        var circle = pacman.getComponent("CircleComponent");
+
+
+        ctx.save();
+        ctx.translate(position.x, position.y); // translates the entire co-ordinate system, x, y are our new 0,0
+        // want to flip only if going left, otherwise, the eye is on the bottom left of pacman.
+        // We want it on the top left. So a mirror image of facing right is perfect for this.
+        if(direction.name == "LEFT"){  
+            ctx.scale(1,-1);
+        }
+        ctx.rotate(direction.angle); // rotate the entire canvas
+        ctx.translate(-position.x, -position.y); // offset based on the initial translation            
+        
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, circle.radius, Math.PI / 4 - this.mouthAnimation.angle, Math.PI * 1.75 + this.mouthAnimation.angle);
+        ctx.lineTo(position.x, position.y);
+
+        // can calculate the final position using co-ordinate transformation
+
+        // requires x offset since the default starting point is the origin point of the canvas
+        var newX = circle.radius * Math.cos(Math.PI / 4 - this.mouthAnimation.angle) + position.x; 
+        var newY = circle.radius * Math.sin(Math.PI / 4 - this.mouthAnimation.angle) + position.y;
+        ctx.lineTo(newX, newY);
+
+        // can also use built method to return to the starting point of the path
+        // (when you use ctx.beginPath()) 
+        //ctx.closePath(); 
+
+        ctx.fillStyle = "yellow"
+        ctx.fill();
+
+        // draw a border around it
+        ctx.strokeStyle = "black";
+        ctx.stroke();
+            
+        // draw the eye.
+        ctx.beginPath(); // this is a completely new shape 
+            
+        ctx.arc(
+            position.x, position.y - circle.radius / 2, // go halfway up from the midpoint
+            circle.radius * 0.15, // the eye will have 15% the radius size of the pacman itself
+            0, 2 * Math.PI // it will be a full circle
+        );
+
+        ctx.fillStyle = "black";
+        ctx.fill();
+        ctx.strokeStyle = "white";
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+*/
 
 pacman = new Pacman(100, 100, 250);
 
