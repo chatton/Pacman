@@ -613,52 +613,8 @@ class Level {
 } // Level
 
 
+
 class Ghost {
-
-    constructor(x, y, width, height){
-        this.speed =  {
-            dx : 0,
-            dy : 0,
-            magnitude : 0.8
-        },
-        this.borderCol = "black";
-        this.bodyCol = "green";
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.path = []; 
-    }
-    
-    draw(){
-        ctx.beginPath();
-        ctx.fillStyle = ghostsScared ? "blue" : this.bodyCol;
-        ctx.arc(this.x , this.y, this.width, Math.PI, 2* Math.PI);
-        ctx.lineTo(this.x + this.width, this.y + this.height);
-        ctx.arc(this.x + this.width / 2, this.y + this.height, this.width * 0.5, 0, Math.PI);
-        ctx.arc(this.x + this.width / 2 - this.width , this.y + this.height, this.width * 0.5, 0, Math.PI);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = this.borderCol;
-        ctx.stroke();
-
-        if(showPath){ // have the PathPellet power up.
-            ctx.beginPath();
-            ctx.strokeStyle = ghostsScared ? "blue" : "red";
-            ctx.moveTo(this.x, this.y);
-            // draw lines all the way along the path the ghost will go
-            for(var i = 1; i < this.path.length; i++){
-                ctx.lineTo(this.path[i].x * tileSize + tileSize/ 2, this.path[i].y * tileSize + tileSize /2 );
-            }
-            var lastNode = this.path[this.path.length - 1];
-            if(exists(lastNode)){
-                // draw a little dot at the end of the path
-                ctx.arc(lastNode.x * tileSize + tileSize / 2, lastNode.y * tileSize + tileSize/2, 2, 0, 2 * Math.PI);
-            }
-           ctx.stroke();
-        }
-    }
-
     die(){
         var g = new Ghost(this.x, this.y, this.width, this.height);
         g.destination = getRandomPoint();
@@ -670,82 +626,10 @@ class Ghost {
         }, 5000);
 
     }
-    /*
-    providing an x/y co-ordinate to the setDestination method
-    will make that ghost navigate towards that point on the board.
-    */
-    setDestination(x, y){ 
-        this.destination = getPoint(x,y);
-    }
-
-    update(){
-        this.x += this.speed.dx;
-        this.y += this.speed.dy;
-        this.currentPoint = getPoint(this.x, this.y);
-        if(time % 30 == 0){ // don't need to calculate path for every ghost on every tick
-            var pacmanPoint = getPacmanPoint();
-            this.borderCol = "black";
-            if(!ghostsScared && distanceBetween(this.currentPoint, pacmanPoint) <= 5){ // close to pacman
-                this.destination = pacmanPoint; // the ghost now moves towards him
-                this.borderCol = "red"; // ghosts are drawn with a red outline.
-            }
-
-            this.path = constructPathBFS(this.currentPoint, this.destination);
-
-            if(this.path.length >= 2){ // there's more path to go, so go to the next node
-                this.currentTarget = this.path[1];
-            } else { // already at the target.
-                this.currentTarget = this.path[0];
-                this.destination = getRandomPoint(); // pick a new point and go there
-            } 
-
-            if(this.currentTarget !== this.currentPoint){                
-                if(this.currentTarget.x > this.currentPoint.x){
-                    this.move("RIGHT");
-                } else if(this.currentTarget.x < this.currentPoint.x){
-                    this.move("LEFT");
-                } else if(this.currentTarget.y < this.currentPoint.y){
-                    this.move("UP");
-                } else if(this.currentTarget.y > this.currentPoint.y){
-                    this.move("DOWN")
-                }
-            }
-        }
-    }
-
-     move(signal){
-        this.currentDirection = signal;
-        if(signal == "UP"){
-                this.speed.dy = -this.speed.magnitude;
-                this.speed.dx = 0;
-        } else if (signal == "LEFT"){
-                this.speed.dx = -this.speed.magnitude;
-                this.speed.dy = 0;
-        } else if (signal == "DOWN"){
-                this.speed.dx = 0;
-                this.speed.dy = this.speed.magnitude;
-        } else if (signal == "RIGHT"){
-                this.speed.dx = this.speed.magnitude;
-                this.speed.dy = 0;
-        }
-    }
 }
 
 // the things pacman eats to make the ghosts vulnerable/scared of pacman
 class PowerPellet {
-    constructor(x, y, radius){
-        this.x = x;
-        this.y = y;
-        this.radius = radius;
-    }
-   
-    draw(){
-        ctx.beginPath();
-        ctx.fillStyle = "red";
-        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-        ctx.fill();
-    }
-
     onCollected(){
         ghostsScared = true; // ghosts can now be eaten by pacman.
         setTimeout(function(){
@@ -755,20 +639,6 @@ class PowerPellet {
 }
 
 class PathPellet {
-
-    constructor(x, y, radius){
-        this.x = x;
-        this.y = y;
-        this.radius = radius;
-    }
-   
-    draw(){
-        ctx.beginPath();
-        ctx.fillStyle = "green";
-        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-        ctx.fill();
-    }
-
     onCollected(){
         showPath = true; // AI ghost paths will now be displayed
         setTimeout(function(){
