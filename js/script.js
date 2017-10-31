@@ -365,6 +365,7 @@ function makeWall(x, y, width, height){
 
 function makeGhost(x, y, width, height, tileSize) {
     var ghost = new Entity(engine);
+    ghost.name = "GHOST";
     return ghost.add(new PositionComponent(x * tileSize + tileSize / 2, y * tileSize + tileSize / 2))
             .add(new RectangleComponent(width * (tileSize / 2), height * (tileSize / 2)))
             .add(new ColourComponent("purple", "green"))
@@ -373,12 +374,13 @@ function makeGhost(x, y, width, height, tileSize) {
             .add(new RenderComponent(new RectangleRenderer(ghost)))
 }
 
-function makePacman(x, y, radius) {
+function makePacman(x, y, radius, tileSize) {
     var pacman = new Entity(engine);
-    return pacman.add(new PositionComponent(x * tileSize + tileSize / 2, y * tileSize + tileSize / 2))
+    pacman.name = "PACMAN"; // mainly for debugging purposes to identify the pacman entity.
+    return pacman.add(new PositionComponent(Math.floor(x * tileSize + tileSize / 2), Math.floor(y * tileSize + tileSize / 2)))
         .add(new ColourComponent("yellow", "black"))
-        .add(new SpeedComponent(1,1))
-        .add(new CircleComponent(radius, 0, 2 * Math.PI))
+        .add(new SpeedComponent(0,0))
+        .add(new CircleComponent(radius))
         .add(new DirectionComponent())
         .add(new RenderComponent(new PacmanRenderer(pacman)));
 }
@@ -581,7 +583,7 @@ class Level {
                     //pacman.stop(); // so velocity from previous level doesn't carry over.
                     //pacman.reposition(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2);
                     // pacman.reposition(j, i)
-                    var pacman = makePacman(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2);
+                    var pacman = makePacman(j , i, (this.tileSize / 2 ) * 0.8, this.tileSize);
                     engine.addEntity(pacman);
                 }
                 if(char == "."){ // put a dot there, but in the middle of the tile not on the edge.
@@ -857,6 +859,7 @@ class PacmanRenderer {
     }
 
     render(){
+        
         var position = this.pacman.getComponent("PositionComponent");
         var colour = this.pacman.getComponent("ColourComponent");
         var direction = this.pacman.getComponent("DirectionComponent");
