@@ -14,6 +14,13 @@ class RectangleComponent {
     }
 }
 
+class DirectionComponent {
+    constructor(){
+        this.angle = 0;
+        this.name = "RIGHT";
+    }
+}
+
 class CircleComponent {
     constructor(radius, startAngle, finishAngle) {
         this.radius = radius;
@@ -158,7 +165,6 @@ class RenderSystem {
         this.requirements = ["RenderComponent"]
         this.entities = [];
     }
-
 
     add(entity){
         this.entities.push(entity);
@@ -367,6 +373,17 @@ function makeGhost(x, y, width, height, tileSize) {
             .add(new RenderComponent(new RectangleRenderer(ghost)))
 }
 
+function makePacman(x, y, radius) {
+    var pacman = new Entity(engine);
+    return pacman.add(new PositionComponent(x * tileSize + tileSize / 2, y * tileSize + tileSize / 2))
+        .add(new ColourComponent("yellow", "black"))
+        .add(new SpeedComponent(1,1))
+        .add(new CircleComponent(radius, 0, 2 * Math.PI))
+        .add(new DirectionComponent())
+        .add(new RenderComponent(new PacmanRenderer(pacman)));
+}
+
+
 
 
 var canvas = document.getElementById("canvas");
@@ -374,7 +391,7 @@ var ctx = canvas.getContext("2d");
 var angle = 0
 
 document.addEventListener("keydown", function(event){
-    pacman.move(event.keyCode); // the pacman move function can take an event code to act as signal
+    //pacman.move(event.keyCode); // the pacman move function can take an event code to act as signal
 }, false); 
 
 // keep track of "score", meaningless value to display during and at the end of the game.
@@ -392,7 +409,7 @@ document.getElementById("fileinput").addEventListener("change", function(event){
     showPath = false;
     gameOver = false;
     ghostsScared = false;
-    pacman.lives = 2;
+    //pacman.lives = 2;
     playerScore = 0;
     var f = event.target.files[0];
     var reader = new FileReader();
@@ -464,7 +481,8 @@ function getPoint(x, y){
 
 // easy access to pacman's location.
 function getPacmanPoint(){
-    return getPoint(pacman.x, pacman.y);
+    pacmanPosition = pacman.getComponent("PositionComponent");
+    return getPoint(pacmanPosition.x, pacmanPosition.y);
 }
 
 function distanceBetween(point1, point2){
@@ -523,8 +541,6 @@ pellets = [];
 dots = [];
 walls = [];
 
-
-
 class Level {
     constructor(levelAsString){
         this.levelAsString = levelAsString;
@@ -550,22 +566,23 @@ class Level {
                 
 
                 // determine if the node is passable.
-                var passable = char != "#" // walls are NOT passable.
+                var passable = char != "#" // walls are NOT passable. Every other tile is.
                 var node = new Node(passable, j, i);
 
-                // add the node to the graph
+                // add the node to the graph, map keys are dynamically generated.
                 this.graph.set(String(j) + " " + String(i), node);
                 
                 if(char == "S"){
                     this.start = node;
                     // this is the starting position for pacman
                     // move him to the starting location.
-                    console.log(pacman);
-                    pacman.resize((this.tileSize / 2) * 0.8); // tilesize/ 2 to fit in one tile
+                    //pacman.resize((this.tileSize / 2) * 0.8); // tilesize/ 2 to fit in one tile
                     // x 0.8 to make it fill up 80% of the tile instead of the whole space.
-                    pacman.stop(); // so velocity from previous level doesn't carry over.
-                    pacman.reposition(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2);
+                    //pacman.stop(); // so velocity from previous level doesn't carry over.
+                    //pacman.reposition(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2);
                     // pacman.reposition(j, i)
+                    var pacman = makePacman(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2);
+                    engine.addEntity(pacman);
                 }
                 if(char == "."){ // put a dot there, but in the middle of the tile not on the edge.
                     var dot = makeDot(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.15);
@@ -578,7 +595,7 @@ class Level {
                 }  
 
                 if(char == "G"){
-                    var ghost = makeGhost(j, i ,0.5,0.5, this.tileSize);
+                    var ghost = makeGhost(j, i, 0.5, 0.5, this.tileSize);
                     engine.addEntity(ghost);
                 }
 
@@ -648,6 +665,7 @@ class PathPellet {
 }
 
 
+/*
 class Pacman {
 
     constructor(x, y, radius, speed){
@@ -704,11 +722,11 @@ class Pacman {
         this.x = x;
         this.y = y;
     }
-    /*
+   
     in some cases pacman is treated as a rectangle for
     collision purposes, this method provides an easy
     way to access that.
-    */
+   
     asRect(){
         return {
             x: this.x - this.radius,
@@ -813,7 +831,7 @@ class Pacman {
     }
 }
 
-/*
+*/
 class PacmanRenderer {
     constructor(pacman){
         this.pacman = pacman;
@@ -839,12 +857,11 @@ class PacmanRenderer {
     }
 
     render(){
-        var position = pacman.getComponent("PositionComponent");
-        var colour = pacman.getComponent("ColourComponent");
-        var direction = pacman.getComponent("DirectionComponent");
-        var circle = pacman.getComponent("CircleComponent");
-
-
+        var position = this.pacman.getComponent("PositionComponent");
+        var colour = this.pacman.getComponent("ColourComponent");
+        var direction = this.pacman.getComponent("DirectionComponent");
+        var circle = this.pacman.getComponent("CircleComponent");
+        
         ctx.save();
         ctx.translate(position.x, position.y); // translates the entire co-ordinate system, x, y are our new 0,0
         // want to flip only if going left, otherwise, the eye is on the bottom left of pacman.
@@ -893,9 +910,9 @@ class PacmanRenderer {
         ctx.restore();
     }
 }
-*/
 
-pacman = new Pacman(100, 100, 250);
+
+//pacman = new Pacman(100, 100, 250);
 
 // checks for collisions with JUST pacman into other objects.
 // Ghosts don't collide with the dots, just pacman and the walls.
@@ -978,21 +995,15 @@ function handleWallCollisions(pacman, wall){
     }
 }
 
-//var pacman = new Pacman(500, 500, 20);
 
+// the pacman entity.
+// pacman = makePacman(1, 1, 25);
+// engine.addEntity(pacman);
 
-/*
-var dots = [];
-var walls = [];
-var ghosts = [];
-var pellets = [];
-var checker = new CollisionChecker(pacman, dots, walls, ghosts);
-*/
 function clear(colour){
     ctx.fillStyle = colour || "black";
     ctx.fillRect(0, 0, canvas.height, canvas.width);
 }
-
 
 function start(){
     clear();
