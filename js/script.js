@@ -114,6 +114,9 @@ class SeekerSystem {
         }
 
         for(var i = 0; i < this.entities.length; i++){
+            
+            // TODO make them go towards pacman if they're close!
+
 
             var entity = this.entities[i];
             var seeker = entity.getComponent("SeekerComponent");
@@ -236,8 +239,6 @@ class RectangleRenderer {
     }
 }
 
-
-
 class PlayerControlSystem {
     constructor() {
         this.entities = [];
@@ -257,9 +258,8 @@ class PlayerControlSystem {
 
 class Entity {
 
-    constructor(engine) {
-        this.engine = engine;
-        this.components = new Map();
+    constructor() {
+        this.components = new Map(); // entity is just a bag of components. No logic.
     }
 
     add(component) {
@@ -278,17 +278,21 @@ class Entity {
     getComponent(type) {
         return this.components.get(type);
     }
-
-    remove() {
-        this.engine.removeEntity(this);
-    }
 }
 
 
 class Engine {
 
     constructor() {
-        this.systems = []
+        this.entities = [];
+        this.systems = [];
+    }
+
+    reset(){ // remove all entities from the game.
+        wipeArray(this.entities);
+        this.systems.forEach(function(sys){
+            wipeArray(sys.entities); 
+        });
     }
 
     removeEntity(entity) {
@@ -297,10 +301,11 @@ class Engine {
                 this.removeEntityFromSystem(entity);
             }
         }
+        removeFromArray(entity, this.entities);
     }
     
     systemHasEntity(system, entity){
-        return system.entities.indexOf(entity) > -1;
+        return contains(entity, system.entities);
     }
 
     removeEntityFromSystem(entity, system){
@@ -317,6 +322,7 @@ class Engine {
                 this.systems[i].add(entity);
             }
         }
+        this.entities.push(entity);
     }
 
     entityMeetsRequirementsFor(entity, system) {
@@ -344,7 +350,7 @@ engine.addSystem(new RenderSystem()); // handles drawing of entities that can be
 
 // functions to create different entities in the game.
 function makeDot(x, y, radius){
-    var dot = new Entity(engine);
+    var dot = new Entity();
     dot.add(new PositionComponent(x, y)); // dot consists of a position
     dot.add(new CircleComponent(radius)); // a radius
     dot.add(new ColourComponent("yellow", "black")); // and colour.
@@ -354,7 +360,7 @@ function makeDot(x, y, radius){
 }
 
 function makeWall(x, y, width, height){
-    var wall = new Entity(engine);
+    var wall = new Entity();
     wall.add(new PositionComponent(x, y));
     wall.add(new RectangleComponent(width, height));
     wall.add(new ColourComponent("black", "blue"));
@@ -364,7 +370,7 @@ function makeWall(x, y, width, height){
 }
 
 function makeGhost(x, y, width, height, tileSize) {
-    var ghost = new Entity(engine);
+    var ghost = new Entity();
     ghost.name = "GHOST";
     return ghost.add(new PositionComponent(x * tileSize + tileSize / 2, y * tileSize + tileSize / 2))
             .add(new RectangleComponent(width * (tileSize / 2), height * (tileSize / 2)))
@@ -374,26 +380,56 @@ function makeGhost(x, y, width, height, tileSize) {
             .add(new RenderComponent(new RectangleRenderer(ghost)))
 }
 
+var pacmanDir = new DirectionComponent();
+var pacmanSpeed = new SpeedComponent(0,0);
+
 function makePacman(x, y, radius, tileSize) {
-    var pacman = new Entity(engine);
+    var pacman = new Entity();
     pacman.name = "PACMAN"; // mainly for debugging purposes to identify the pacman entity.
+    pacmanSpeed = new SpeedComponent(0,0);
     return pacman.add(new PositionComponent(Math.floor(x * tileSize + tileSize / 2), Math.floor(y * tileSize + tileSize / 2)))
         .add(new ColourComponent("yellow", "black"))
-        .add(new SpeedComponent(0,0))
+        .add(pacmanSpeed)
         .add(new CircleComponent(radius))
-        .add(new DirectionComponent())
+        .add(pacmanDir)
         .add(new RenderComponent(new PacmanRenderer(pacman)));
 }
-
-
-
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 var angle = 0
 
+// when a keydown event occurs, operate directly on pacmans
+// direction and speed components to make him move.
+
 document.addEventListener("keydown", function(event){
-    //pacman.move(event.keyCode); // the pacman move function can take an event code to act as signal
+    switch(event.keyCode){
+        case 38: // UP
+            pacmanDir.name = "UP";
+            pacmanDir.angle = Math.PI * (3 / 2);
+            pacmanSpeed.dy = -3;
+            pacmanSpeed.dx = 0;
+            break;
+        case 37: // LEFT
+            pacmanDir.name = "LEFT";
+            pacmanDir.angle = Math.PI;
+            pacmanSpeed.dx = -3;
+            pacmanSpeed.dy = 0;
+            break;
+        case 40: // DOWN
+            pacmanDir.name = "DOWN";
+            pacmanDir.angle = Math.PI / 2;
+            pacmanSpeed.dx = 0;
+            pacmanSpeed.dy = 3;
+            break;
+        case 39: // RIGHT
+            pacmanDir.name = "RIGHT";
+            pacmanDir.angle = 0;
+            pacmanSpeed.dx = 3;
+            pacmanSpeed.dy = 0;
+            break;
+    }
+
 }, false); 
 
 // keep track of "score", meaningless value to display during and at the end of the game.
@@ -438,20 +474,18 @@ function removeFromArray(obj, arr) {
     for(var i = 0; i < arr.length; i++){
         if(arr[i] === obj){
             arr.splice(i, 1)
-            return;
+            return; // early exit.
         }
     }
+}
+
+function contains(obj, arr){
+    return arr.indexOf(obj) > -1;
 }
 
 // function to clear the contents of an existing array
 function wipeArray(arr){
     arr.splice(0, arr.length);
-}
-
-function wipeArrays(arrays){
-    arrays.forEach(function(arr){
-        wipeArray(arr);
-    });
 }
 
 function exists(obj){
@@ -538,11 +572,6 @@ class Node {
     }
 }
 
-ghosts = [];
-pellets = [];
-dots = [];
-walls = [];
-
 class Level {
     constructor(levelAsString){
         this.levelAsString = levelAsString;
@@ -559,7 +588,7 @@ class Level {
     }
 
     build(){
-        wipeArrays([ghosts, dots, walls, pellets]);
+        engine.reset();
         var rows = this.levelAsString.split("\n");    
         this.tileSize = canvas.width / (rows[0].length - 1);
         for(var i = 0; i < rows.length; i++){
@@ -602,11 +631,11 @@ class Level {
                 }
 
                 if(char == "H"){
-                    pellets.push(new PathPellet(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
+                    //pellets.push(new PathPellet(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
                 }
 
                 if(char == "P"){
-                    pellets.push(new PowerPellet(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
+                    //pellets.push(new PowerPellet(j * this.tileSize + this.tileSize / 2, i * this.tileSize + this.tileSize / 2, (this.tileSize / 2) * 0.40));
                 }
             } // inner for
         } // outer for
@@ -669,66 +698,6 @@ class PathPellet {
 
 /*
 class Pacman {
-
-    constructor(x, y, radius, speed){
-        this.x = x;
-        this.y = y;
-        this.graphicalComponents = [];
-        this.radius = radius;
-        this.speed = speed || {
-            dx : 0,
-            dy : 0,
-            magnitude : 3
-        }
-        this.lives = 2;
-        this.direction = {
-            name : "RIGHT",
-            angle : 0
-        }
-
-        // mouth animation object in charge of providing the "angle"
-        // variable to add/remove to the ctx.arc of drawing pacman
-        // to make the mouth open and close.
-        this.mouthAnimation = {
-            speed : 0.05,
-            gap : 0.3,
-            angle : 0,
-            direction : 1,
-            update : function(){
-                // depending on direction, the mouth will open or close.
-                if(this.direction == 1){
-                    this.angle += this.speed; 
-                } else{
-                    this.angle -= this.speed;   
-                }
-                
-                // stop it on the way back so it doesn't go back around the full circle.
-                if(this.angle > (1 - this.gap) || this.angle < 0) {
-                    this.direction *= -1; // switch direction
-                }
-            } 
-        }
-    } // constructor 
-
-    resize(r) {
-        this.radius = r;
-    }
-
-    // halts all movement on pacman
-    stop(){
-        this.speed.dx = 0;
-        this.speed.dy = 0;
-    }
-    // provide a new location for pacman to spawn
-    reposition(x, y){
-        this.x = x;
-        this.y = y;
-    }
-   
-    in some cases pacman is treated as a rectangle for
-    collision purposes, this method provides an easy
-    way to access that.
-   
     asRect(){
         return {
             x: this.x - this.radius,
@@ -737,54 +706,7 @@ class Pacman {
             width : 2 * this.radius
         }
     }
-    draw(){
-        ctx.save();
-        ctx.translate(this.x, this.y); // translates the entire co-ordinate system, x, y are our new 0,0
-        // want to flip only if going left, otherwise, the eye is on the bottom left of pacman.
-        // We want it on the top left. So a mirror image of facing right is perfect for this.
-        if(this.direction.name == "LEFT"){  
-            ctx.scale(1,-1);
-        }
-        ctx.rotate(this.direction.angle); // rotate the entire canvas
-        ctx.translate(-this.x, -this.y); // offset based on the initial translation            
-        
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, Math.PI / 4 - this.mouthAnimation.angle, Math.PI * 1.75 + this.mouthAnimation.angle);
-        ctx.lineTo(this.x, this.y);
-
-        // can calculate the final position using co-ordinate transformation
-
-        // requires x offset since the default starting point is the origin point of the canvas
-        var newX = this.radius * Math.cos(Math.PI / 4 - this.mouthAnimation.angle) + this.x; 
-        var newY = this.radius * Math.sin(Math.PI / 4 - this.mouthAnimation.angle) + this.y;
-        ctx.lineTo(newX, newY);
-
-        // can also use built method to return to the starting point of the path
-        // (when you use ctx.beginPath()) 
-        //ctx.closePath(); 
-
-        ctx.fillStyle = "yellow"
-        ctx.fill();
-
-        // draw a border around it
-        ctx.strokeStyle = "black";
-        ctx.stroke();
-            
-        // draw the eye.
-        ctx.beginPath(); // this is a completely new shape 
-            
-        ctx.arc(
-            this.x, this.y - this.radius / 2, // go halfway up from the midpoint
-            this.radius * 0.15, // the eye will have 15% the radius size of the pacman itself
-            0, 2 * Math.PI // it will be a full circle
-        );
-
-        ctx.fillStyle = "black";
-        ctx.fill();
-        ctx.strokeStyle = "white";
-        ctx.stroke();
-        ctx.restore();
-    }
+    
     die(){
         if(this.lives-- == 0){
             gameOver = true;
@@ -794,45 +716,7 @@ class Pacman {
         var startingPoint = level.getStartPoint();
         this.reposition(startingPoint.x * tileSize + tileSize / 2, startingPoint.y * tileSize + tileSize / 2);
     }
-    update(){
-        this.x += this.speed.dx;
-        this.y += this.speed.dy;
-        this.mouthAnimation.update();
-    }
-    move(signal){
-        // signal can be a string or an event keyCode
-        if(signal == 38 || signal == "UP"){
-                this.direction = {
-                    name : "UP",
-                    angle : Math.PI * (3/2) // angle pacman should be facing when he is in this direction
-                };
-                this.speed.dy = -this.speed.magnitude;
-                this.speed.dx = 0;
-        } else if (signal == 37 || signal == "LEFT"){
-                this.direction = {
-                    name : "LEFT",
-                    angle : Math.PI
-                };
-                this.speed.dx = -this.speed.magnitude;
-                this.speed.dy = 0;
-        } else if (signal == 40 || signal == "DOWN"){
-                this.direction = {
-                    name: "DOWN",
-                    angle : Math.PI / 2
-                };
-                this.speed.dx = 0;
-                this.speed.dy = this.speed.magnitude;
-        } else if (signal == 39 || signal == "RIGHT"){
-                this.direction = {
-                    name : "RIGHT",
-                    angle : 0
-                };
-                this.speed.dx = this.speed.magnitude;
-                this.speed.dy = 0;
-        }
-    }
-}
-
+   
 */
 class PacmanRenderer {
     constructor(pacman){
@@ -911,11 +795,12 @@ class PacmanRenderer {
         ctx.strokeStyle = "white";
         ctx.stroke();
         ctx.restore();
+
+        this.mouthAnimation.update(); // makes the mouth animation update to adjust the opening and closing mouth position.
     }
 }
 
 
-//pacman = new Pacman(100, 100, 250);
 
 // checks for collisions with JUST pacman into other objects.
 // Ghosts don't collide with the dots, just pacman and the walls.
@@ -997,11 +882,6 @@ function handleWallCollisions(pacman, wall){
         }
     }
 }
-
-
-// the pacman entity.
-// pacman = makePacman(1, 1, 25);
-// engine.addEntity(pacman);
 
 function clear(colour){
     ctx.fillStyle = colour || "black";
