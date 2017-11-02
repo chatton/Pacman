@@ -7,6 +7,12 @@ class SeekerComponent {
     }
 }
 
+class HitBoxComponent {
+    constructor(rect) {
+        this.rect = rect;
+    }
+}
+
 class RectangleComponent {
     constructor(width, height){
         this.width = width;
