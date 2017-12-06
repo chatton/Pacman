@@ -1,5 +1,5 @@
-var canvas = document.getElementById("canvas");
-var ctx = canvas.getContext("2d");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 var angle = 0
 
 document.addEventListener("keydown", function(event){
@@ -17,7 +17,7 @@ var ghostsScared = false;
 var gameOver = false;
 
 // read in a file based on what the user provides.
-document.getElementById("fileinput").addEventListener("change", function(event){
+document.getElementById("fileinput").addEventListener("change", event => {
     showPath = false;
     gameOver = false;
     ghostsScared = false;
@@ -69,18 +69,18 @@ function exists(obj){
 }
 
 function cirlcesIntersect(obj1, obj2){
-    var dx = obj1.x - obj2.x; // distance in x co-ord
-    var dy = obj1.y - obj2.y; // distance in y co-ord
-    var distance = Math.sqrt((dx * dx) + (dy * dy)); // pythagoras' theorem
+    const dx = obj1.x - obj2.x; // distance in x co-ord
+    const dy = obj1.y - obj2.y; // distance in y co-ord
+    const distance = Math.sqrt((dx * dx) + (dy * dy)); // pythagoras' theorem
     return distance < (obj1.radius + obj2.radius);
 }
 
 // returns a random point on the level. That is also traversable.
 function getRandomPoint(){
-    var point;
+    let point;
     do {
-        var x = Math.random() * (canvas.width / level.tileSize); // number within the correct x/y range
-        var y = Math.random() * (canvas.height / level.tileSize);
+        const x = Math.random() * (canvas.width / level.tileSize); // number within the correct x/y range
+        const y = Math.random() * (canvas.height / level.tileSize);
         point = level.get(Math.floor(x),Math.floor(y));
     } while(!exists(point) || !point.isPassable); // ensure point is passable.
     return point;
@@ -126,7 +126,7 @@ function constructPathBFS(from, to){
             return path; // the fully constructed path
         }
 
-        element.neighbours.forEach(function(n){
+        element.neighbours.forEach(n => {
             // only care about a node if we haven't seen it
             // and it isn't a wall
             if(n.isPassable && !visited.has(n)){
@@ -164,16 +164,16 @@ class Level {
 
     build(){
         wipeArrays([ghosts, dots, walls, pellets]);
-        var rows = this.levelAsString.split("\n");    
+        const rows = this.levelAsString.split("\n");    
         this.tileSize = canvas.width / (rows[0].length - 1);
-        for(var i = 0; i < rows.length; i++){
-            for(var j = 0; j < rows[0].length; j++){        
-                var char = rows[i][j];
+        for(let i = 0; i < rows.length; i++){
+            for(let j = 0; j < rows[0].length; j++){        
+                const char = rows[i][j];
                 
 
                 // determine if the node is passable.
-                var passable = char != "#" // walls are NOT passable.
-                var node = new Node(passable, j, i);
+                const passable = char != "#" // walls are NOT passable.
+                const node = new Node(passable, j, i);
 
                 // add the node to the graph
                 this.graph.set(String(j) + " " + String(i), node);
@@ -212,17 +212,17 @@ class Level {
             } // inner for
         } // outer for
         // second iteration to connect up all the nodes.
-        for(var i = 0; i  < rows.length; i++){
-            for(var j = 0; j < rows[0].length; j++){
-                var node = this.get(j,i);
-                var aboveNode = this.get(j, i-1);
-                var leftNode = this.get(j - 1, i);
-                var rightNode = this.get(j + 1, i);
-                var downNode = this.get(j, i+1);
+        for(let i = 0; i  < rows.length; i++){
+            for(let j = 0; j < rows[0].length; j++){
+                const node = this.get(j,i);
+                const aboveNode = this.get(j, i-1);
+                const leftNode = this.get(j - 1, i);
+                const rightNode = this.get(j + 1, i);
+                const downNode = this.get(j, i+1);
                 
                 // add the 4 surrounding nodes if they exist.
-                var neighbours = [aboveNode, leftNode, rightNode, downNode];
-                neighbours.forEach(function(n){
+                const neighbours = [aboveNode, leftNode, rightNode, downNode];
+                neighbours.forEach(n => {
                     if(exists(n)){
                         node.neighbours.push(n);
                     }
@@ -298,13 +298,13 @@ class Ghost {
     }
 
     die(){
-        var g = new Ghost(this.x, this.y, this.width, this.height);
+        const g = new Ghost(this.x, this.y, this.width, this.height);
         g.destination = getRandomPoint();
         g.currentPoint = getPoint(g.x, g.y);
         playerScore += 200;
         removeFromArray(this, ghosts);
-        setTimeout(function(){
-            ghosts.push(g);
+        setTimeout(() => {
+            ghosts.push(g); // ghost respawns after 5 seconds
         }, 5000);
 
     }
@@ -382,8 +382,10 @@ class Dot{
     draw(){
         ctx.beginPath();
         ctx.fillStyle = "yellow";
+        ctx.strokeStyle = "black";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
+        ctx.stroke();
     }
 }
 
@@ -405,9 +407,7 @@ class PowerPellet {
 
     onCollected(){
         ghostsScared = true; // ghosts can now be eaten by pacman.
-        setTimeout(function(){
-            ghostsScared = false; // lasts for 15 seconds.
-        },15000);
+        setTimeout(() => {ghostsScared = false;}, 15000); // lasts for 15 seconds.
     }
 }
 
@@ -428,9 +428,7 @@ class PathPellet {
 
     onCollected(){
         showPath = true; // AI ghost paths will now be displayed
-        setTimeout(function(){
-            showPath = false // lasts for 15 seconds, then sets it back to false.
-        },15000);
+        setTimeout(()=>{showPath = false; },15000); // lasts for 15 seconds, then sets it back to false.
     }
 }
 
@@ -520,8 +518,8 @@ class Pacman {
         // can calculate the final position using co-ordinate transformation
 
         // requires x offset since the default starting point is the origin point of the canvas
-        var newX = this.radius * Math.cos(Math.PI / 4 - this.mouthAnimation.angle) + this.x; 
-        var newY = this.radius * Math.sin(Math.PI / 4 - this.mouthAnimation.angle) + this.y;
+        const newX = this.radius * Math.cos(Math.PI / 4 - this.mouthAnimation.angle) + this.x; 
+        const newY = this.radius * Math.sin(Math.PI / 4 - this.mouthAnimation.angle) + this.y;
         ctx.lineTo(newX, newY);
 
         // can also use built method to return to the starting point of the path
@@ -612,26 +610,26 @@ class CollisionChecker {
     }
 
     update(){
-        for(var i = 0; i < dots.length; i++){
+        for(let i = 0; i < dots.length; i++){
             if(cirlcesIntersect(pacman, dots[i])){
                 dots.splice(i, 1); // remove the dot from the game
                 //this.sound.play();
                 playerScore += 100;
             }
         }
-        for(var i = 0; i < walls.length; i++){
+        for(let i = 0; i < walls.length; i++){
             handleWallCollisions(pacman, walls[i]);
         }
-        for(var i = 0; i < pellets.length; i++){
+        for(let i = 0; i < pellets.length; i++){
             if(cirlcesIntersect(pacman, pellets[i])){
                 pellets[i].onCollected();
                 pellets.splice(i, 1); // remove the pellet from the game
             }
         }
 
-        ghosts.forEach(function(ghost){
+        ghosts.forEach(ghost => {
             if(rectanglesCollide(pacman.asRect(), ghost)){
-                var victim = ghostsScared ? ghost : pacman;
+                const victim = ghostsScared ? ghost : pacman;
                 victim.die();
             }
         });
@@ -639,10 +637,10 @@ class CollisionChecker {
 }
 
 function rectanglesCollide(rect1, rect2){
-    var dx = (rect1.x  + rect1.width / 2) - (rect2.x + rect2.width / 2);
-    var dy = (rect1.y + rect1.height / 2) - (rect2.y + rect2.height /2)
-    var width = (rect1.width + rect2.width) / 2;
-    var height = (rect1.height + rect2.height) /2;
+    const dx = (rect1.x  + rect1.width / 2) - (rect2.x + rect2.width / 2);
+    const dy = (rect1.y + rect1.height / 2) - (rect2.y + rect2.height /2)
+    const width = (rect1.width + rect2.width) / 2;
+    const height = (rect1.height + rect2.height) /2;
     return Math.abs(dx) <= width && Math.abs(dy) <= height;
 
 }
@@ -653,14 +651,14 @@ function handleWallCollisions(pacman, wall){
     
     // handle collisions between pacman and wall as a rectangle to avoid corner issues.
     // no need to treat pacman as a circle here.
-    var pacmanRect = pacman.asRect();
+    const pacmanRect = pacman.asRect();
 
-    var dx = (pacmanRect.x  + pacmanRect.width / 2) - (wall.x + wall.width / 2);
-    var dy = (pacmanRect.y + pacmanRect.height / 2) - (wall.y + wall.height /2)
-    var width = (pacmanRect.width + wall.width) / 2;
-    var height = (pacmanRect.height + wall.height) /2;
-    var crossWidth = width * dy;
-    var crossHeight = height * dx;
+    const dx = (pacmanRect.x  + pacmanRect.width / 2) - (wall.x + wall.width / 2);
+    const dy = (pacmanRect.y + pacmanRect.height / 2) - (wall.y + wall.height /2)
+    const width = (pacmanRect.width + wall.width) / 2;
+    const height = (pacmanRect.height + wall.height) /2;
+    const crossWidth = width * dy;
+    const crossHeight = height * dx;
 
     if(Math.abs(dx) <= width && Math.abs(dy) <= height){ // collision
         if(crossWidth > crossHeight){ // pacman is below or to the left
@@ -681,6 +679,39 @@ function handleWallCollisions(pacman, wall){
 
 var pacman = new Pacman(500, 500, 20);
 
+function buildImage(options){
+    const image = new Image();
+    image.src = options.src;
+    return image;
+}
+
+const background = buildImage({
+    src:"res/space.jpg"
+});
+
+// let backGroundAngle = 0;
+let backgroundScale = 1;
+let zoomingIn = true;
+let ticks = 0;
+function drawBackground(){
+    ctx.save();
+    ticks++ // counter to indicate the zooming should happen in reverse
+    if(ticks == 400){ // do 400 ticks in each direction.
+        ticks = 0; // reset the counter.
+        zoomingIn = !zoomingIn; // toggle direction
+    }
+
+    if(zoomingIn){
+        backgroundScale += 0.001;
+    } else {
+        backgroundScale -= 0.001;
+    }
+    // scale using tansform
+    ctx.transform(backgroundScale,0,0,backgroundScale,0,0);
+    ctx.drawImage(background, 0, 0);
+    ctx.restore();
+}
+
 var dots = [];
 var walls = [];
 var ghosts = [];
@@ -694,23 +725,24 @@ function clear(colour){
 
 function start(){
     clear();
+    drawBackground();
     time++;
     if(time > 100000){
         time = 0;
     }
     pacman.draw();
     pacman.update();
-    ghosts.forEach(function(ghost){
+    ghosts.forEach(ghost => {
         ghost.draw();
         ghost.update();
     });
-    dots.forEach(function(dot){
+    dots.forEach(dot => {
         dot.draw();
     });
-    walls.forEach(function(wall){
+    walls.forEach(wall => {
         wall.draw();
     });
-    pellets.forEach(function(pellet){
+    pellets.forEach(pellet => {
         pellet.draw();
     });
 
