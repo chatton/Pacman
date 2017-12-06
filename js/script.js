@@ -18,6 +18,7 @@ var gameOver = false;
 
 // read in a file based on what the user provides.
 document.getElementById("fileinput").addEventListener("change", event => {
+    playedVictorySound = false;
     showPath = false;
     gameOver = false;
     ghostsScared = false;
@@ -31,8 +32,8 @@ document.getElementById("fileinput").addEventListener("change", event => {
         level = new Level(content);
         level.build();
         tileSize = level.tileSize;
-        var sound = new Audio("res/sounds/beginning.wav");
-        //sound.play();
+        const sound = new Audio("res/sounds/beginning.wav");
+        sound.play();
 
     }
     reader.readAsText(f);
@@ -298,6 +299,8 @@ class Ghost {
     }
 
     die(){
+        const deathSound = new Audio("res/sounds/pacman_eatghost.wav");
+        deathSound.play();
         const g = new Ghost(this.x, this.y, this.width, this.height);
         g.destination = getRandomPoint();
         g.currentPoint = getPoint(g.x, g.y);
@@ -406,6 +409,8 @@ class PowerPellet {
     }
 
     onCollected(){
+        const sound = new Audio("res/sounds/pacman_eatfruit.wav");
+        sound.play();
         ghostsScared = true; // ghosts can now be eaten by pacman.
         setTimeout(() => {ghostsScared = false;}, 15000); // lasts for 15 seconds.
     }
@@ -550,6 +555,9 @@ class Pacman {
     }
     die(){
         if(this.lives-- == 0){
+            // play a death sound on game over.
+            const deathSound = new Audio("res/sounds/pacman_death.wav");
+            deathSound.play();
             gameOver = true;
         }
         this.stop();
@@ -613,7 +621,7 @@ class CollisionChecker {
         for(let i = 0; i < dots.length; i++){
             if(cirlcesIntersect(pacman, dots[i])){
                 dots.splice(i, 1); // remove the dot from the game
-                //this.sound.play();
+                this.sound.play();
                 playerScore += 100;
             }
         }
@@ -712,17 +720,18 @@ function drawBackground(){
     ctx.restore();
 }
 
-var dots = [];
-var walls = [];
-var ghosts = [];
-var pellets = [];
-var checker = new CollisionChecker(pacman, dots, walls, ghosts);
+const dots = [];
+const walls = [];
+const ghosts = [];
+const pellets = [];
+const checker = new CollisionChecker(pacman, dots, walls, ghosts);
 
 function clear(colour){
     ctx.fillStyle = colour || "black";
     ctx.fillRect(0, 0, canvas.height, canvas.width);
 }
 
+var playedVictorySound  = false;
 function start(){
     clear();
     drawBackground();
@@ -748,6 +757,14 @@ function start(){
 
     checker.update();
 
+    if(dots.length == 0 && playerScore > 0){
+        if(!playedVictorySound){
+            new Audio("res/sounds/pacman_intermission.wav").play();
+            playedVictorySound = true;
+        }
+        gameOver = true;
+        
+    }
     if(gameOver){
         clear();
         ctx.font = "30px Arial";
