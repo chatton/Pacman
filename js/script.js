@@ -380,6 +380,7 @@ class Dot{
         this.x = x;
         this.y = y;
         this.radius = radius;
+        this.scale = 1;
     }
 
     draw(){
@@ -404,15 +405,17 @@ class PowerPellet {
     draw(){
         ctx.beginPath();
         ctx.fillStyle = "red";
-        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+        ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);7
         ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.stroke();
     }
 
     onCollected(){
         const sound = new Audio("res/sounds/pacman_eatfruit.wav");
         sound.play();
         ghostsScared = true; // ghosts can now be eaten by pacman.
-        setTimeout(() => {ghostsScared = false;}, 15000); // lasts for 15 seconds.
+        setTimeout(() => {ghostsScared = false;}, 10000); // lasts for 10 seconds.
     }
 }
 
@@ -429,6 +432,8 @@ class PathPellet {
         ctx.fillStyle = "green";
         ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.stroke();
     }
 
     onCollected(){

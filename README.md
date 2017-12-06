@@ -34,6 +34,7 @@ The background image is a sprite.
 
 8. Collision reactions.
 
+- Sounds play on collisions.    
 - Pacman cannot move through walls.
 - If pacman collides with a ghost, if the ghost is scared the ghost dies, otherwise pacman loses a life.
 - Pacman can collect 2 different types of pellets which will activate an effect and disappear on collection.
@@ -53,3 +54,4 @@ The background image is a sprite.
 - When you collect a "Path Pellet", the current paths of the ghosts will be drawn.
 - If a ghost gets near Pacman (Using the Manhattan distance as a metric), they will switch destination to go towards Pacman.
 - Initially, a ghost will have a random destination, when they reach it, they will pick a new destination and move towards that.
+- Sounds play on collisions, and certain events. Collisions, victory, defeat etc.
